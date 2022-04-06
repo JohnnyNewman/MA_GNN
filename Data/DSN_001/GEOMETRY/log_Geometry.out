@@ -1,0 +1,416 @@
+
+-------------------------------------------------------------------------
+|    ___ _   _ ___                                                      |
+|   / __| | | |_  )   Release 7.1.1 "Blackbird"                         |
+|   \__ \ |_| |/ /                                                      |
+|   |___/\___//___|   Suite (Geometry Definition Code)                  |
+|                                                                       |
+-------------------------------------------------------------------------
+| SU2 Project Website: https://su2code.github.io                        |
+|                                                                       |
+| The SU2 Project is maintained by the SU2 Foundation                   |
+| (http://su2foundation.org)                                            |
+-------------------------------------------------------------------------
+| Copyright 2012-2020, SU2 Contributors                                 |
+|                                                                       |
+| SU2 is free software; you can redistribute it and/or                  |
+| modify it under the terms of the GNU Lesser General Public            |
+| License as published by the Free Software Foundation; either          |
+| version 2.1 of the License, or (at your option) any later version.    |
+|                                                                       |
+| SU2 is distributed in the hope that it will be useful,                |
+| but WITHOUT ANY WARRANTY; without even the implied warranty of        |
+| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |
+| Lesser General Public License for more details.                       |
+|                                                                       |
+| You should have received a copy of the GNU Lesser General Public      |
+| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |
+-------------------------------------------------------------------------
+
+----------------- Physical Case Definition ( Zone 0 ) -------------------
+Surface(s) where the geometrical based functions is evaluated: AIRFOIL.
+Input mesh file name: mesh_RAE2822_turb.su2
+
+-------------------- Output Information ( Zone 0 ) ----------------------
+
+------------- Config File Boundary Information ( Zone 0 ) ---------------
++-----------------------------------------------------------------------+
+|                        Marker Type|                        Marker Name|
++-----------------------------------------------------------------------+
+|                          Far-field|                           FARFIELD|
++-----------------------------------------------------------------------+
+|                     Heat flux wall|                            AIRFOIL|
++-----------------------------------------------------------------------+
+Two dimensional problem.
+13937 grid points before partitioning.
+22842 volume elements before partitioning.
+2 surface markers.
+192 boundary elements in index 0 (Marker = AIRFOIL).
+40 boundary elements in index 1 (Marker = FARFIELD).
+Executing the partitioning functions.
+Building the graph adjacency structure.
+Calling ParMETIS... graph partitioning complete (563 edge cuts).
+Distributing ParMETIS coloring.
+Rebalancing vertices.
+Rebalancing volume element connectivity.
+Rebalancing markers and surface elements.
+14568 vertices including ghost points. 
+23405 interior elements including halo cells. 
+18541 triangles.
+4864 quadrilaterals.
+Establishing MPI communication patterns.
+
+----------------------- Preprocessing computations ----------------------
+Setting local point connectivity.
+Checking the numerical grid orientation of the interior elements.
+All volume elements are correctly orientend.
+Identify edges and vertices.
+Setting the bound control volume structure.
+Compute the surface curvature.
+Max K: 158.363. Mean K: 7.11927. Standard deviation K: 21.0143.
+Setting reference area and span.
+Wetted area = 2.02426 m.
+Area projection in the x-plane = 0.123154 m, y-plane = 0.995873 m.
+Max. coordinate in the x-direction = 1 m, y-direction = 0.0643507 m.
+Min. coordinate in the x-direction = 0 m, y-direction = -0.0577875 m.
+Set plane structure.
+
+-------------------- Objective function evaluation ----------------------
+
+Station 1. ZCoord: 0 m, Area: 0.0778446 m^2, Thickness: 0.121096 m, 
+Chord: 1 m, LE radius: 112.182 1/m, ToC: 0.121096, Alpha: -0.00974028 deg.
+------------------------- Solver Postprocessing -------------------------
+Deleted main variables.
+Deleted CGeometry container.
+Deleted CSurfaceMovement class.
+Deleted CFreeFormDefBox class.
+Deleted CConfig container.
+
+
+Completed in 0.006208 seconds on 4 cores.
+
+------------------------- Exit Success (SU2_GEO) ------------------------
+
+
+-------------------------------------------------------------------------
+|    ___ _   _ ___                                                      |
+|   / __| | | |_  )   Release 7.1.1 "Blackbird"                         |
+|   \__ \ |_| |/ /                                                      |
+|   |___/\___//___|   Suite (Geometry Definition Code)                  |
+|                                                                       |
+-------------------------------------------------------------------------
+| SU2 Project Website: https://su2code.github.io                        |
+|                                                                       |
+| The SU2 Project is maintained by the SU2 Foundation                   |
+| (http://su2foundation.org)                                            |
+-------------------------------------------------------------------------
+| Copyright 2012-2020, SU2 Contributors                                 |
+|                                                                       |
+| SU2 is free software; you can redistribute it and/or                  |
+| modify it under the terms of the GNU Lesser General Public            |
+| License as published by the Free Software Foundation; either          |
+| version 2.1 of the License, or (at your option) any later version.    |
+|                                                                       |
+| SU2 is distributed in the hope that it will be useful,                |
+| but WITHOUT ANY WARRANTY; without even the implied warranty of        |
+| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |
+| Lesser General Public License for more details.                       |
+|                                                                       |
+| You should have received a copy of the GNU Lesser General Public      |
+| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |
+-------------------------------------------------------------------------
+
+----------------- Physical Case Definition ( Zone 0 ) -------------------
+Surface(s) where the geometrical based functions is evaluated: AIRFOIL.
+Input mesh file name: mesh_RAE2822_turb.su2
+
+-------------------- Output Information ( Zone 0 ) ----------------------
+
+------------- Config File Boundary Information ( Zone 0 ) ---------------
++-----------------------------------------------------------------------+
+|                        Marker Type|                        Marker Name|
++-----------------------------------------------------------------------+
+|                          Far-field|                           FARFIELD|
++-----------------------------------------------------------------------+
+|                     Heat flux wall|                            AIRFOIL|
++-----------------------------------------------------------------------+
+Two dimensional problem.
+13937 grid points before partitioning.
+22842 volume elements before partitioning.
+2 surface markers.
+192 boundary elements in index 0 (Marker = AIRFOIL).
+40 boundary elements in index 1 (Marker = FARFIELD).
+Executing the partitioning functions.
+Building the graph adjacency structure.
+Calling ParMETIS... graph partitioning complete (563 edge cuts).
+Distributing ParMETIS coloring.
+Rebalancing vertices.
+Rebalancing volume element connectivity.
+Rebalancing markers and surface elements.
+14568 vertices including ghost points. 
+23405 interior elements including halo cells. 
+18541 triangles.
+4864 quadrilaterals.
+Establishing MPI communication patterns.
+
+----------------------- Preprocessing computations ----------------------
+Setting local point connectivity.
+Checking the numerical grid orientation of the interior elements.
+All volume elements are correctly orientend.
+Identify edges and vertices.
+Setting the bound control volume structure.
+Compute the surface curvature.
+Max K: 158.363. Mean K: 7.11927. Standard deviation K: 21.0143.
+Setting reference area and span.
+Wetted area = 2.02426 m.
+Area projection in the x-plane = 0.123154 m, y-plane = 0.995873 m.
+Max. coordinate in the x-direction = 1 m, y-direction = 0.0643507 m.
+Min. coordinate in the x-direction = 0 m, y-direction = -0.0577875 m.
+Set plane structure.
+
+-------------------- Objective function evaluation ----------------------
+
+Station 1. ZCoord: 0 m, Area: 0.0778446 m^2, Thickness: 0.121096 m, 
+Chord: 1 m, LE radius: 112.182 1/m, ToC: 0.121096, Alpha: -0.00974028 deg.
+
+------------- Gradient evaluation using finite differences --------------
+
+Design variable number 0.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.254376. Thickness grad.: 0.209012. Chord grad.: 0. LE radius grad.: -5704.49. ToC grad.: 0.209012. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 1.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.324769. Thickness grad.: 0.369308. Chord grad.: 0. LE radius grad.: -1631.61. ToC grad.: 0.369308. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 2.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.370803. Thickness grad.: 0.529796. Chord grad.: 0. LE radius grad.: -466.141. ToC grad.: 0.529796. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 3.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.402717. Thickness grad.: 0.684468. Chord grad.: 0. LE radius grad.: -126.065. ToC grad.: 0.684468. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 4.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.424366. Thickness grad.: 0.822356. Chord grad.: 0. LE radius grad.: -30.9874. ToC grad.: 0.822356. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 5.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.437678. Thickness grad.: 0.929561. Chord grad.: 0. LE radius grad.: -6.64846. ToC grad.: 0.929561. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 6.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.443758. Thickness grad.: 0.990927. Chord grad.: 0. LE radius grad.: -1.18901. ToC grad.: 0.990927. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 7.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.443293. Thickness grad.: 0.992675. Chord grad.: 0. LE radius grad.: -0.167435. ToC grad.: 0.992675. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 8.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.436729. Thickness grad.: 0.926331. Chord grad.: 0. LE radius grad.: -0.0172343. ToC grad.: 0.926331. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 9.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.424361. Thickness grad.: 0.793544. Chord grad.: 0. LE radius grad.: -0.0011713. ToC grad.: 0.793544. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 10.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.406381. Thickness grad.: 0.610264. Chord grad.: 0. LE radius grad.: -4.54727e-005. ToC grad.: 0.610264. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 11.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.382912. Thickness grad.: 0.407356. Chord grad.: 0. LE radius grad.: -8.12705e-007. ToC grad.: 0.407356. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 12.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.354022. Thickness grad.: 0.224079. Chord grad.: 0. LE radius grad.: -4.80327e-009. ToC grad.: 0.224079. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 13.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.319744. Thickness grad.: 0.0934131. Chord grad.: 0. LE radius grad.: 0. ToC grad.: 0.0934131. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 14.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.280081. Thickness grad.: 0.0254991. Chord grad.: 0. LE radius grad.: 0. ToC grad.: 0.0254991. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 15.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.235016. Thickness grad.: 0.00342278. Chord grad.: 0. LE radius grad.: 0. ToC grad.: 0.00342278. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 16.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.184513. Thickness grad.: 0.000116033. Chord grad.: 0. LE radius grad.: 0. ToC grad.: 0.000116033. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 17.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.128522. Thickness grad.: 1.32215e-007. Chord grad.: 0. LE radius grad.: 0. ToC grad.: 1.32215e-007. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 18.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.0670282. Thickness grad.: 0. Chord grad.: 0. LE radius grad.: 0. ToC grad.: 0. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 19.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.254373. Thickness grad.: 0.209039. Chord grad.: 0. LE radius grad.: -4532.04. ToC grad.: 0.209039. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 20.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.324774. Thickness grad.: 0.36935. Chord grad.: 0. LE radius grad.: -1158.69. ToC grad.: 0.36935. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 21.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.370816. Thickness grad.: 0.529847. Chord grad.: 0. LE radius grad.: -301.439. ToC grad.: 0.529847. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 22.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.402737. Thickness grad.: 0.684522. Chord grad.: 0. LE radius grad.: -74.5725. ToC grad.: 0.684522. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 23.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.424391. Thickness grad.: 0.822404. Chord grad.: 0. LE radius grad.: -16.7306. ToC grad.: 0.822404. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 24.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.437703. Thickness grad.: 0.929596. Chord grad.: 0. LE radius grad.: -3.25444. ToC grad.: 0.929596. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 25.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.443779. Thickness grad.: 0.990941. Chord grad.: 0. LE radius grad.: -0.522134. ToC grad.: 0.990941. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 26.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.443305. Thickness grad.: 0.992662. Chord grad.: 0. LE radius grad.: -0.065004. ToC grad.: 0.992662. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 27.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.436728. Thickness grad.: 0.92629. Chord grad.: 0. LE radius grad.: -0.00580112. ToC grad.: 0.92629. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 28.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.424343. Thickness grad.: 0.79348. Chord grad.: 0. LE radius grad.: -0.000333064. ToC grad.: 0.79348. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 29.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.406346. Thickness grad.: 0.61019. Chord grad.: 0. LE radius grad.: -1.05462e-005. ToC grad.: 0.61019. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 30.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.382865. Thickness grad.: 0.407287. Chord grad.: 0. LE radius grad.: -1.46414e-007. ToC grad.: 0.407287. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 31.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.353973. Thickness grad.: 0.224029. Chord grad.: 0. LE radius grad.: -6.11067e-010. ToC grad.: 0.224029. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 32.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.319705. Thickness grad.: 0.0933856. Chord grad.: 0. LE radius grad.: 0. ToC grad.: 0.0933856. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 33.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.280064. Thickness grad.: 0.0254893. Chord grad.: 0. LE radius grad.: 0. ToC grad.: 0.0254893. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 34.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.235031. Thickness grad.: 0.00342103. Chord grad.: 0. LE radius grad.: 0. ToC grad.: 0.00342103. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 35.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.184567. Thickness grad.: 0.000115948. Chord grad.: 0. LE radius grad.: 0. ToC grad.: 0.000115948. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 36.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.128619. Thickness grad.: 1.3205e-007. Chord grad.: 0. LE radius grad.: 0. ToC grad.: 1.3205e-007. Twist angle grad.: 0. 
+-------------------------------------------------------------------------
+
+Design variable number 37.
+Perform 2D deformation of the surface.
+
+Station 1. YCoord: 0. Area grad.: 0.0671232. Thickness grad.: 0. Chord grad.: 0. LE radius grad.: 0. ToC grad.: 0. Twist angle grad.: 0. 
+
+------------------------- Solver Postprocessing -------------------------
+Deleted main variables.
+Deleted CGeometry container.
+Deleted CSurfaceMovement class.
+Deleted CFreeFormDefBox class.
+Deleted CConfig container.
+
+
+Completed in 0.020934 seconds on 4 cores.
+
+------------------------- Exit Success (SU2_GEO) ------------------------
+
