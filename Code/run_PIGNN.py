@@ -10,6 +10,18 @@ from itertools import chain, islice
 
 from utils import *
 
+
+import pyvista
+
+import torch
+from torch import nn
+from torch.nn import Sequential as Seq, Linear, ReLU, Sigmoid
+from torch_geometric.nn import MessagePassing
+from torch_geometric.utils import add_self_loops, degree
+from torch_geometric.data import Data
+
+from torch_scatter import scatter
+
 node_types = {
     "field": 0,
     "bbox": 1,
@@ -399,18 +411,9 @@ if __name__ == "__main__":
     node_subsampling_prob = np.array(node_subsampling_prob)
 
 
-    import pyvista
     file_name = "flow.vtu"
     flow = pyvista.read(os.path.join(data_dir, file_name))
 
-    import torch
-    from torch import nn
-    from torch.nn import Sequential as Seq, Linear, ReLU, Sigmoid
-    from torch_geometric.nn import MessagePassing
-    from torch_geometric.utils import add_self_loops, degree
-    from torch_geometric.data import Data
-
-    from torch_scatter import scatter
 
     data_field_names = ["Pressure", "Velocity_x", "Velocity_y", "Pressure_Coefficient", "Density"]
 
@@ -519,3 +522,5 @@ if __name__ == "__main__":
             loss_hist = torch.tensor(loss_hist)
             print(epoch, loss.detach(), torch.mean(loss_hist), torch.std(loss_hist))
             loss_hist = []
+    
+    torch.save(model.state_dict(), "pignn_model_001.pt")
