@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from torch.nn import Sequential as Seq, Linear, ReLU, Sigmoid
+from torch.nn import Sequential as Seq, Linear, ReLU, Sigmoid, functional as F
 from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import add_self_loops, degree
 from torch_geometric.data import Data
@@ -18,7 +18,7 @@ class PIGNN_Euler(MessagePassing):
         out_channels=4,
         num_type_embeddings=10,
         type_embedding_dim=8,
-        num_lvls=6,
+        num_lvls=8,
         lvl_embedding_dim=4,
         delaunay_tris=None,
         num_residual_latent_updates=16,
@@ -121,19 +121,19 @@ class PIGNN_Euler(MessagePassing):
 
     def forward(self, data):
 
-        h7 = self.compute_graph_latents(data)
+        h_nodes = self.compute_graph_latents(data)
 
         # x_out=x_samples,
         # simplex_indices=simplex_indices,
         # simplex_transforms=[torch.tensor(tri.transform) for tri in tris]
 
-        h_interp = self.interpolate_latents(
-            data.x_data,
-            h7,
+        h_out = self.interpolate_latents(
+            data.x_out,
+            h_nodes,
             data.node_lvls,
-            data.simplex_indices,
+            data.x_out_simplex_indices,
             data.simplex_transforms,
-            data.simplex_node_ids,
+            data.x_out_simplex_node_ids,
         )
 
         # if data.x_out is None:
@@ -145,7 +145,7 @@ class PIGNN_Euler(MessagePassing):
 
         # print("h1", h1)
 
-        u = self.output(h_interp)
+        u = self.output(h_out)
 
         return u
 
@@ -153,7 +153,7 @@ class PIGNN_Euler(MessagePassing):
         # print("message")
         # print(h_i, h_j, x_i, x_j)
         dx = x_j - x_i
-        dist = torch.functional.norm(dx, p=2, dim=-1).view(-1, 1)
+        dist = torch.functional.norm(dx, p=2, dim=-1).view(-1, 1)  # type: ignore
         # print(dx.shape, dist.shape)
         # n = dx / dist
 
@@ -165,13 +165,13 @@ class PIGNN_Euler(MessagePassing):
         return z_out
 
     def compute_initial_latents(
-        self, node_type_ids, node_lvls, u_bc, u_x_bc=None, u_xx_bc=None
+        self, node_type_ids, node_lvls, u_nodes, u_x_bc=None, u_xx_bc=None
     ):
         z_type = self.node_type_emb(node_type_ids)
         z_lvl = self.node_lvl_emb(node_lvls)
 
         # print(z_type.shape, z_lvl.shape, u_bc.shape)
-        z0 = torch.cat((z_type, z_lvl, u_bc), dim=-1)
+        z0 = torch.cat((z_type, z_lvl, u_nodes), dim=-1)
         # print(z0.shape)
         # z0 = torch.cat((z_type, z_lvl, u_bc, u_x_bc, u_xx_bc))
         h0 = self.initial_latent_mlp(z0)
@@ -183,7 +183,7 @@ class PIGNN_Euler(MessagePassing):
 
     def compute_graph_latents(self, data):
         h0 = self.compute_initial_latents(
-            data.node_type_ids, data.node_lvls, data.u_bc
+            data.node_type_ids, data.node_lvls, data.u_nodes
         )  # .view(1, 7421, 16)
         # h0 = self.compute_initial_latents(node_type_ids, node_lvls, u_bc, u_x_bc, u_xx_bc)
 
@@ -260,13 +260,13 @@ class PIGNN_Euler(MessagePassing):
         y = self.output_mlp(h)
         return y
 
-    def residuals(self, data):
+    def residuals(self, u, x):
 
-        u = self.forward(data)
+        # u = self.forward(data)
 
         u_x = torch.autograd.grad(
             u,
-            data.x,
+            x,
             grad_outputs=torch.ones_like(u),
             create_graph=True,
             retain_graph=True,
@@ -275,3 +275,18 @@ class PIGNN_Euler(MessagePassing):
         # u_t = torch.autograd.grad(u, t, grad_outputs=torch.ones_like(u), create_graph=True, retain_graph=True)[0]
 
         return
+
+    def compute_loss(self, data):
+        h_nodes = self.compute_graph_latents(data)
+        h_data = self.interpolate_latents(
+            data.x_data,
+            h_nodes,
+            data.node_lvls,
+            data.x_data_simplex_indices,
+            data.simplex_transforms,
+            data.x_data_simplex_node_ids,
+        )
+        u_data_pred = self.output(h_data)
+        loss_data = F.mse_loss(u_data_pred, data.u_data)
+
+        return loss_data

@@ -322,7 +322,7 @@ def create_multilevel_graph(x0, node_type_ids, node_su2_tags, num_levels=8):
 
         nodes_last_lvl = nodes_new_lvl
 
-    # edges = np.array(edges)
+    edges = np.concatenate(edges)
 
     return (
         node_pts,
@@ -410,17 +410,17 @@ def sample_points(simplices, node_pts, n_samples=10_000, replace=True):
     if replace:
         i_samples = np.random.choice(N, n_samples, replace=True)
     else:
-        if n_samples > N:
-            a = n_samples // N
-            b = n_samples % N
-            i_samples = [np.arange(N) for i in range(a)]
-            if b > 0:
-                i_samples.append(np.random.choice(N, b, replace=False))
-            i_samples = np.concatenate(i_samples)
+        # if n_samples > N:
+        a = n_samples // N
+        b = n_samples % N
+        i_samples = [np.arange(N) for i in range(a)]
+        if b > 0:
+            i_samples.append(np.random.choice(N, b, replace=False))
+        i_samples = np.concatenate(i_samples)
 
-            # i_samples = np.random.choice(N, b, replace=False)
-            # for i in range(a):
-            #     i_samples = np.concatenate((i_samples, np.arange(N)))
+        # i_samples = np.random.choice(N, b, replace=False)
+        # for i in range(a):
+        #     i_samples = np.concatenate((i_samples, np.arange(N)))
 
     w_samples = np.random.rand(n_samples, D)
     w_samples = w_samples / w_samples.sum(axis=1)[:, np.newaxis]
@@ -429,7 +429,7 @@ def sample_points(simplices, node_pts, n_samples=10_000, replace=True):
         node_pts[simplices[i_samples]] * w_samples[:, :, np.newaxis], axis=1
     )
 
-    return x_samples
+    return x_samples, i_samples
 
 
 def find_containing_simplices(tris, x_samples, node_pts, node_lvls):
