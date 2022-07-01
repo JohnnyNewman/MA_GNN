@@ -12,7 +12,7 @@ from torch_scatter import scatter
 
 
 class PIGNN_Euler(MessagePassing):
-    def __init__(self, device, space_dim=2, in_channels=4, latent_dim=32, out_channels=4, num_type_embeddings=10, type_embedding_dim=8, num_lvls=6, lvl_embedding_dim=4, delaunay_tris=None):
+    def __init__(self, device, space_dim=2, in_channels=4, latent_dim=32, out_channels=4, num_type_embeddings=10, type_embedding_dim=8, num_lvls=6, lvl_embedding_dim=4, delaunay_tris=None, num_residual_latent_updates=16):
         super().__init__(aggr='add', node_dim=0) #  "Max" aggregation.
 
         self.latent_dim = latent_dim
@@ -49,6 +49,8 @@ class PIGNN_Euler(MessagePassing):
         self.node_lvl_emb = nn.Embedding(num_lvls, lvl_embedding_dim)
 
         self.delaunay_tris = delaunay_tris
+
+        self.num_residual_latent_updates = num_residual_latent_updates
     
     # def forward(self, x, edge_index, cells, node_type_ids, node_lvls, u_bc, u_x_bc=None, u_xx_bc=None, x_out=None, tri_indices=None):
         
@@ -157,21 +159,28 @@ class PIGNN_Euler(MessagePassing):
     # def compute_graph_latents(self, edge_index, x, node_type_ids, node_lvls, u_bc):
     #     pass
 
+
+
     def compute_graph_latents(self, data):
         h0 = self.compute_initial_latents(data.node_type_ids, data.node_lvls, data.u_bc)    #.view(1, 7421, 16)
         # h0 = self.compute_initial_latents(node_type_ids, node_lvls, u_bc, u_x_bc, u_xx_bc)
 
         # print(h0.shape)
 
-        h1 = self.propagate(data.edge_index, h=h0, x=data.x) + h0
-        h2 = self.propagate(data.edge_index, h=h1, x=data.x) + h1
-        h3 = self.propagate(data.edge_index, h=h2, x=data.x) + h2
-        h4 = self.propagate(data.edge_index, h=h1, x=data.x) + h3
-        h5 = self.propagate(data.edge_index, h=h2, x=data.x) + h4
-        h6 = self.propagate(data.edge_index, h=h1, x=data.x) + h5
-        h7 = self.propagate(data.edge_index, h=h2, x=data.x) + h6
+        # h1 = self.propagate(data.edge_index, h=h0, x=data.x) + h0
+        # h2 = self.propagate(data.edge_index, h=h1, x=data.x) + h1
+        # h3 = self.propagate(data.edge_index, h=h2, x=data.x) + h2
+        # h4 = self.propagate(data.edge_index, h=h1, x=data.x) + h3
+        # h5 = self.propagate(data.edge_index, h=h2, x=data.x) + h4
+        # h6 = self.propagate(data.edge_index, h=h1, x=data.x) + h5
+        # h7 = self.propagate(data.edge_index, h=h2, x=data.x) + h6
 
-        return h7
+        h_new = h0
+        for i in range(self.num_residual_latent_updates):
+            h_old = h_new
+            h_new = self.propagate(data.edge_index, h=h_old, x=data.x) + h_old
+
+        return h_new
 
 
     def interpolate_latents(self, x_out, h_nodes, node_lvls, simplex_indices, simplex_transforms, simplex_node_ids):
