@@ -36,15 +36,13 @@ node_types = {
 }
 
 su2_to_node_type = {
-    0: node_types["field"],             # volume field
-    1: node_types["euler_wall"],        # airfoil
-    2: node_types["euler_wall"],        # lower wall
-    3: node_types["velocity_inlet"],    # inlet
-    4: node_types["pressure_outlet"],   # outlet
-    5: node_types["euler_wall"],        # upper wall
+    0: node_types["field"],  # volume field
+    1: node_types["euler_wall"],  # airfoil
+    2: node_types["euler_wall"],  # lower wall
+    3: node_types["velocity_inlet"],  # inlet
+    4: node_types["pressure_outlet"],  # outlet
+    5: node_types["euler_wall"],  # upper wall
 }
-
-
 
 
 def load_mesh(data_dir, mesh_filename):
@@ -61,28 +59,39 @@ def load_mesh(data_dir, mesh_filename):
             node_inds = mesh.cells[i].data[cell_inds].reshape(-1)
             node_type_ids[node_inds] = su2_to_node_type[su2_tag]
             node_su2_tags[node_inds] = su2_tag
-            
+
     node_type_ids = node_type_ids.tolist()
 
     return mesh, node_su2_tags
 
 
-
-def create_node_graph(mesh, node_su2_tags):
+def create_node_graph(mesh, node_su2_tags, num_levels=6):
 
     farfield_node_indices = np.where(np.array(node_su2_tags) >= 2)[0]
     airfoil_node_indices = np.where(np.array(node_su2_tags) == 1)[0]
 
     bbox_node_indices = [
-        farfield_node_indices[np.argmax(mesh.points[farfield_node_indices, :2] @ np.array([[1],[1]]))],
-        farfield_node_indices[np.argmax(mesh.points[farfield_node_indices, :2] @ np.array([[1],[-1]]))],
-        farfield_node_indices[np.argmax(mesh.points[farfield_node_indices, :2] @ np.array([[-1],[1]]))],
-        farfield_node_indices[np.argmax(mesh.points[farfield_node_indices, :2] @ np.array([[-1],[-1]]))],
+        farfield_node_indices[
+            np.argmax(mesh.points[farfield_node_indices, :2] @ np.array([[1], [1]]))
+        ],
+        farfield_node_indices[
+            np.argmax(mesh.points[farfield_node_indices, :2] @ np.array([[1], [-1]]))
+        ],
+        farfield_node_indices[
+            np.argmax(mesh.points[farfield_node_indices, :2] @ np.array([[-1], [1]]))
+        ],
+        farfield_node_indices[
+            np.argmax(mesh.points[farfield_node_indices, :2] @ np.array([[-1], [-1]]))
+        ],
     ]
 
     airfoil_edge_node_indices = [
-        airfoil_node_indices[np.argmax(mesh.points[airfoil_node_indices, :2] @ np.array([[1],[0]]))],
-        airfoil_node_indices[np.argmax(mesh.points[airfoil_node_indices, :2] @ np.array([[-1],[0]]))],
+        airfoil_node_indices[
+            np.argmax(mesh.points[airfoil_node_indices, :2] @ np.array([[1], [0]]))
+        ],
+        airfoil_node_indices[
+            np.argmax(mesh.points[airfoil_node_indices, :2] @ np.array([[-1], [0]]))
+        ],
     ]
 
     node_pts = []
@@ -97,7 +106,7 @@ def create_node_graph(mesh, node_su2_tags):
     cells = []
 
     for i in range(len(mesh.points)):
-        node_pts += [[mesh.points[i,0], mesh.points[i,1]]]
+        node_pts += [[mesh.points[i, 0], mesh.points[i, 1]]]
         node_orig_ids += [i]
         node_new_ids += [i]
         # node_type_ids += [0]
@@ -111,27 +120,26 @@ def create_node_graph(mesh, node_su2_tags):
             cell_inds = np.where(su2_tags == su2_tag)[0]
             node_inds = mesh.cells[i].data[cell_inds].reshape(-1)
             node_type_ids[node_inds] = su2_to_node_type[su2_tag]
-            
+
     node_type_ids = node_type_ids.tolist()
 
     for i in farfield_node_indices:
-    #     node_type_ids[i] = node_types["farfield"]
+        #     node_type_ids[i] = node_types["farfield"]
         node_subsampling_prob[i] = 0.75
-        
+
     for i in bbox_node_indices:
         node_type_ids[i] = node_types["bbox"]
-        # print("bbox", i, node_type_ids[i])   
-        node_subsampling_prob[i] = 1 
-        
+        # print("bbox", i, node_type_ids[i])
+        node_subsampling_prob[i] = 1
+
     for i in airfoil_node_indices:
-    #     node_type_ids[i] = node_types["airfoil"]
+        #     node_type_ids[i] = node_types["airfoil"]
         node_subsampling_prob[i] = 0.75
-        
+
     for i in airfoil_edge_node_indices:
         # node_type_ids[i] = node_types["airfoil_edge"]
         node_subsampling_prob[i] = 1
 
-    
     print("Creating Multi-level Graph")
 
     print(0, len(node_pts))
@@ -145,18 +153,20 @@ def create_node_graph(mesh, node_su2_tags):
     cells.append(tri.simplices + nodes_lvl.min())
 
     indptr, indices = tri.vertex_neighbor_vertices
-    for k in range(len(indptr)-1):
+    for k in range(len(indptr) - 1):
         i = indptr[k]
-        j = indptr[k+1]
+        j = indptr[k + 1]
         for m in indices[i:j]:
             edge = [nodes_lvl[k], nodes_lvl[m]]
             edges.append(edge)
 
-    for lvl in range(1, 6):
+    for lvl in range(1, num_levels):
 
-        nodes_lvl = np.where(np.array(node_lvls) == lvl-1)[0]
+        nodes_lvl = np.where(np.array(node_lvls) == lvl - 1)[0]
         p = np.random.rand(len(nodes_lvl))
-        nodes_lvl = [n for i,n in enumerate(nodes_lvl) if node_subsampling_prob[n] >= p[i]]
+        nodes_lvl = [
+            n for i, n in enumerate(nodes_lvl) if node_subsampling_prob[n] >= p[i]
+        ]
         # sample_indices = np.where(node_subsampling_prob[nodes_lvl.astype(np.int)] >= p)[0]
         # nodes_lvl = nodes_lvl[sample_indices]
         # nodes_lvl = nodes_lvl[node_subsampling_prob[nodes_lvl] >= p]
@@ -181,16 +191,14 @@ def create_node_graph(mesh, node_su2_tags):
         tris.append(tri)
 
         cells.append(tri.simplices + nodes_lvl.min())
-        
+
         indptr, indices = tri.vertex_neighbor_vertices
-        for k in range(len(indptr)-1):
+        for k in range(len(indptr) - 1):
             i = indptr[k]
-            j = indptr[k+1]
+            j = indptr[k + 1]
             for m in indices[i:j]:
                 edge = [nodes_lvl[k], nodes_lvl[m]]
                 edges.append(edge)
-
-
 
     node_pts = np.array(node_pts)
     node_orig_ids = np.array(node_orig_ids)
@@ -200,26 +208,164 @@ def create_node_graph(mesh, node_su2_tags):
     edges = np.array(edges)
     node_subsampling_prob = np.array(node_subsampling_prob)
 
-    return node_pts, node_orig_ids, node_new_ids, node_type_ids, node_lvls, edges, node_subsampling_prob, tris, cells
+    return (
+        node_pts,
+        node_orig_ids,
+        node_new_ids,
+        node_type_ids,
+        node_lvls,
+        edges,
+        node_subsampling_prob,
+        tris,
+        cells,
+    )
 
 
-def load_sim_data_euler(data_dir, file_name, node_type_ids):
+def create_multilevel_graph(x0, node_type_ids, node_su2_tags, num_levels=8):
+
+    # num_levels = 8
+
+    node_subsampling_prob = np.empty_like(x0[:, 0], dtype=np.float32)
+
+    # volume
+    node_subsampling_prob[node_su2_tags == 0] = 0.5
+
+    # airfoil
+    node_subsampling_prob[node_su2_tags == 1] = 0.75
+
+    # lower_wall
+    node_subsampling_prob[node_su2_tags == 2] = 0.75
+
+    # inlet
+    node_subsampling_prob[node_su2_tags == 3] = 0.75
+
+    # outlet
+    node_subsampling_prob[node_su2_tags == 4] = 0.75
+
+    # upper_wall
+    node_subsampling_prob[node_su2_tags == 5] = 0.75
+
+    # bbox
+    node_subsampling_prob[node_su2_tags == 6] = 1
+
+    node_new_ids = np.arange(len(node_type_ids))
+    nodes_last_lvl = node_new_ids
+    node_orig_ids = node_new_ids
+    node_lvls = np.zeros_like(node_new_ids)
+    node_pts = x0
+    tris = []
+
+    tri = Delaunay(node_pts)
+    tris.append(tri)
+
+    cells = tri.simplices
+
+    edges = []
+    indptr, indices = tri.vertex_neighbor_vertices
+    for k in range(len(indptr) - 1):
+        i = indptr[k]
+        j = indptr[k + 1]
+        for m in indices[i:j]:
+            edge = np.array([[node_new_ids[k], node_new_ids[m]]])
+            edges.append(edge)
+
+    print(0, len(node_new_ids), len(node_new_ids), len(edges))
+
+    for lvl in range(1, num_levels):
+        p = np.random.rand(len(nodes_last_lvl))
+        # nodes_lvl = [n for i,n in enumerate(nodes_last_lvl) if node_subsampling_prob[n] >= p[i]]
+        nodes_lvl_sampled = nodes_last_lvl[node_subsampling_prob[nodes_last_lvl] >= p]
+        node_orig_ids = np.concatenate((node_orig_ids, nodes_lvl_sampled))
+
+        nodes_new_lvl = (
+            np.arange(nodes_lvl_sampled.shape[0], dtype=node_new_ids.dtype)
+            + node_new_ids.shape[0]
+        )
+        node_new_ids = np.concatenate((node_new_ids, nodes_new_lvl))
+
+        np.stack((nodes_lvl_sampled, nodes_new_lvl), axis=1).shape
+        edges.append(np.stack((nodes_lvl_sampled, nodes_new_lvl), axis=1))
+        edges.append(np.stack((nodes_new_lvl, nodes_lvl_sampled), axis=1))
+
+        # node_subsampling_prob_new = node_subsampling_prob[nodes_lvl]
+        node_subsampling_prob = np.concatenate(
+            (node_subsampling_prob, node_subsampling_prob[nodes_lvl_sampled])
+        )
+
+        node_lvls_new = np.ones_like(nodes_new_lvl) * lvl
+        # node_lvls_new = lvl
+        node_lvls = np.concatenate((node_lvls, node_lvls_new))
+
+        node_pts_lvl = node_pts[nodes_lvl_sampled]
+        node_pts = np.concatenate((node_pts, node_pts_lvl))
+
+        node_new_type_ids = node_type_ids[nodes_lvl_sampled]
+        node_type_ids = np.concatenate((node_type_ids, node_new_type_ids))
+        node_su2_tags = np.concatenate(
+            (node_su2_tags, node_su2_tags[nodes_lvl_sampled])
+        )
+
+        tri = Delaunay(node_pts_lvl)
+        tris.append(tri)
+
+        cells = np.concatenate((cells, tri.simplices + nodes_new_lvl.min()))
+
+        indptr, indices = tri.vertex_neighbor_vertices
+        for k in range(len(indptr) - 1):
+            i = indptr[k]
+            j = indptr[k + 1]
+            for m in indices[i:j]:
+                edge = np.array([[nodes_new_lvl[k], nodes_new_lvl[m]]])
+                edges.append(edge)
+
+        print(lvl, len(nodes_lvl_sampled), len(node_new_ids), len(edges))
+
+        nodes_last_lvl = nodes_new_lvl
+
+    # edges = np.array(edges)
+
+    return (
+        node_pts,
+        node_orig_ids,
+        node_new_ids,
+        node_type_ids,
+        node_lvls,
+        node_su2_tags,
+        edges,
+        node_subsampling_prob,
+        tris,
+        cells,
+    )
+
+
+def load_sim_data_euler(data_dir, file_name, node_type_ids, D=2):
 
     flow = pyvista.read(os.path.join(data_dir, file_name))
 
-    data_field_names = ["Pressure", "Velocity_x", "Velocity_y", "Pressure_Coefficient", "Density"]
+    data_field_names = [
+        "Pressure",
+        "Velocity_x",
+        "Velocity_y",
+        "Pressure_Coefficient",
+        "Density",
+    ]
 
     # qois = [torch.tensor(flow.point_data[qoi]).reshape(13937, -1) for qoi in data_field_names]
     # qois = torch.cat(qois, axis=1)
 
-    qois = torch.tensor(np.stack((
-        flow.point_data["Pressure"],
-        flow.point_data["Velocity"][:,0],
-        flow.point_data["Velocity"][:,1],
-        flow.point_data["Pressure_Coefficient"],
-        # flow.point_data["Density"],
-    ))).T
+    qois = torch.tensor(
+        np.stack(
+            (
+                flow.point_data["Pressure"],
+                flow.point_data["Velocity"][:, 0],
+                flow.point_data["Velocity"][:, 1],
+                flow.point_data["Pressure_Coefficient"],
+                # flow.point_data["Density"],
+            )
+        )
+    ).T
 
+    qoi_names = ["Pressure", "Velocity_x", "Velocity_y", "Pressure_Coefficient"]
 
     qois_mean = torch.mean(qois, dim=0)
     # qois_mean
@@ -228,37 +374,63 @@ def load_sim_data_euler(data_dir, file_name, node_type_ids):
 
     qois_scaled = (qois - qois_mean) / qois_std
 
-
     u_bc = torch.zeros((node_type_ids.shape[0], qois.shape[1]))
 
     # INC_DENSITY_INIT= 998.2
 
     # u_bc[:,4] = INC_DENSITY_INIT
 
-    nodes_field = np.where(node_type_ids==0)[0]
+    nodes_field = np.where(node_type_ids == 0)[0]
 
-    nodes_velocity_inlet = np.where(node_type_ids==0)[0]
-    u_bc[nodes_velocity_inlet, 1] = 1.775   # x-velocity
+    nodes_velocity_inlet = np.where(node_type_ids == 0)[0]
+    u_bc[nodes_velocity_inlet, 1] = 1.775  # x-velocity
 
-    nodes_pressure_outlet = np.where(node_type_ids==0)[0]
-    u_bc[nodes_pressure_outlet, 0] = 0. # pressure
+    nodes_pressure_outlet = np.where(node_type_ids == 0)[0]
+    u_bc[nodes_pressure_outlet, 0] = 0.0  # pressure
 
-    nodes_euler_wall = np.where(node_type_ids==0)[0]
+    nodes_euler_wall = np.where(node_type_ids == 0)[0]
 
     u_bc_scaled = (u_bc - qois_mean) / qois_std
 
-    return qois, u_bc, qois_scaled, u_bc_scaled, qois_mean, qois_std
+    return (
+        qoi_names,
+        qois,
+        u_bc,
+        qois_scaled,
+        u_bc_scaled,
+        qois_mean,
+        qois_std,
+        flow.points[:, :D],
+    )
 
 
-def sample_points(simplices, node_pts, n_samples=10_000):
+def sample_points(simplices, node_pts, n_samples=10_000, replace=True):
     N, D = np.shape(simplices)
-    i_samples = np.random.choice(N, n_samples, replace=True)
+
+    if replace:
+        i_samples = np.random.choice(N, n_samples, replace=True)
+    else:
+        if n_samples > N:
+            a = n_samples // N
+            b = n_samples % N
+            i_samples = [np.arange(N) for i in range(a)]
+            if b > 0:
+                i_samples.append(np.random.choice(N, b, replace=False))
+            i_samples = np.concatenate(i_samples)
+
+            # i_samples = np.random.choice(N, b, replace=False)
+            # for i in range(a):
+            #     i_samples = np.concatenate((i_samples, np.arange(N)))
+
     w_samples = np.random.rand(n_samples, D)
     w_samples = w_samples / w_samples.sum(axis=1)[:, np.newaxis]
 
-    x_samples = np.sum(node_pts[simplices[i_samples]] * w_samples[:, :, np.newaxis], axis=1)
+    x_samples = np.sum(
+        node_pts[simplices[i_samples]] * w_samples[:, :, np.newaxis], axis=1
+    )
 
     return x_samples
+
 
 def find_containing_simplices(tris, x_samples, node_pts, node_lvls):
 
@@ -266,9 +438,11 @@ def find_containing_simplices(tris, x_samples, node_pts, node_lvls):
     simplex_node_ids = []
     for lvl, tri in enumerate(tris):
         i_min = np.min(np.where(node_lvls == lvl)[0])
-        simplex_indices[:, lvl] = torch.tensor(tri.find_simplex(x_samples), dtype=torch.long) #+ i_min
+        simplex_indices[:, lvl] = torch.tensor(
+            tri.find_simplex(x_samples), dtype=torch.long
+        )  # + i_min
         simplex_node_ids.append(torch.tensor(tri.vertices, dtype=torch.long) + i_min)
-    
+
     return simplex_indices, simplex_node_ids
 
 
@@ -291,14 +465,13 @@ def find_containing_simplices(tris, x_samples, node_pts, node_lvls):
 #         i_min = np.min(np.where(node_lvls == lvl)[0])
 #         simplex_indices[:, lvl] = torch.tensor(tri.find_simplex(x_samples), dtype=torch.long) #+ i_min
 #         simplex_node_ids.append(torch.tensor(tri.vertices, dtype=torch.long) + i_min)
-    
+
 #     return x_samples, simplex_indices, simplex_node_ids
 
 
-
-    ### hier weitermachen
-    ### diese Funktionen für Erstellung eines Datasets nutzen
-    ### dann Residuals mit autodiff berechnen
-    ### Einteilung der x,u in data, bc und residuals
-    ### dann auf cluster rechnen
-    ### dann evtl. auf pytorch-lightning migrieren
+### hier weitermachen
+### diese Funktionen für Erstellung eines Datasets nutzen
+### dann Residuals mit autodiff berechnen
+### Einteilung der x,u in data, bc und residuals
+### dann auf cluster rechnen
+### dann evtl. auf pytorch-lightning migrieren
