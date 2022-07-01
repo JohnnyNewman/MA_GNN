@@ -260,7 +260,11 @@ class PIGNN_Euler(MessagePassing):
 
 if __name__ == "__main__":
 
+    print("Starting")
+
     plt.style.use('ggplot')
+
+    print("Loading Simulation Data")
 
     data_dir = "../Data/Inc_Inviscid_Hydrofoil"
     mesh_filename = "mesh_NACA0012_5deg_6814.su2"
@@ -342,7 +346,8 @@ if __name__ == "__main__":
         # node_type_ids[i] = node_types["airfoil_edge"]
         node_subsampling_prob[i] = 1
 
-        
+    
+    print("Creating Multi-level Graph")
 
     print(0, len(node_pts))
 
@@ -411,6 +416,9 @@ if __name__ == "__main__":
     node_subsampling_prob = np.array(node_subsampling_prob)
 
 
+    print("Preparing data")
+
+
     file_name = "flow.vtu"
     flow = pyvista.read(os.path.join(data_dir, file_name))
 
@@ -430,9 +438,9 @@ if __name__ == "__main__":
 
 
     qois_mean = torch.mean(qois, dim=0)
-    qois_mean
+    # qois_mean
     qois_std = torch.std(qois, dim=0)
-    qois_std
+    # qois_std
 
     qois_scaled = (qois - qois_mean) / qois_std
 
@@ -499,6 +507,8 @@ if __name__ == "__main__":
         )
 
 
+    print("Creating PIGNN_Euler model")
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(device)
     model = PIGNN_Euler(device=device).to(device)
@@ -508,8 +518,10 @@ if __name__ == "__main__":
 
     loss_hist = []
 
+    print("Starting Training")
+
     model.train()
-    for epoch in range(200_000):
+    for epoch in range(100_000):
         optimizer.zero_grad()
         out = model(data)
         loss = torch.nn.functional.mse_loss(out, data.y)
@@ -523,4 +535,12 @@ if __name__ == "__main__":
             print(epoch, loss.detach(), torch.mean(loss_hist), torch.std(loss_hist))
             loss_hist = []
     
-    torch.save(model.state_dict(), "pignn_model_001.pt")
+    s = "pignn_model_"
+    existing_models = [fn[12:15] for fn in os.listdir() if fn.startswith(s)]
+    if existing_models:
+        new_model_name = s + "{:03d}".format(int(sorted(existing_models)[-1]) + 1) + ".pt"
+    else:
+        new_model_name = s + "000" + ".pt"
+
+    print("Saving model as", new_model_name)
+    torch.save(model.state_dict(), new_model_name)
