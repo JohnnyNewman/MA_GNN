@@ -213,7 +213,7 @@ u_out_validation = qois_scaled[data_inds_validation].to(device)[:, :4]
 
 
 model.train()
-for epoch in range(10_000):
+for epoch in range(100_000):
     optimizer.zero_grad()
     # out = model(data)
     # loss = F.mse_loss(out, data.y)
@@ -221,7 +221,7 @@ for epoch in range(10_000):
     loss.backward()
     optimizer.step()
 
-    u_pred = model(data)
+    u_pred = model(train_data)
     u_pred = (u_pred - qois_mean.to(device)) / qois_std.to(device)
     val_loss = F.mse_loss(u_pred.detach()[:, :4], u_out_validation).detach()
 
