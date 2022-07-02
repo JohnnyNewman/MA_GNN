@@ -200,7 +200,7 @@ class PIGNN_Euler(MessagePassing):
         # print("message")
         # print(h_i, h_j, x_i, x_j)
         dx = x_j - x_i
-        dist = torch.functional.norm(dx, p=2, dim=-1).view(-1, 1)
+        dist = torch.functional.norm(dx, p=2, dim=-1).view(-1, 1)  # type: ignore
         # print(dx.shape, dist.shape)
         # n = dx / dist
 
@@ -568,7 +568,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
     model = PIGNN_Euler(device=device).to(device)
-    data = data.to(device)
+    data = data.to(device)  # type: ignore
     optimizer = torch.optim.Adam(model.parameters())
     # optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
 
@@ -580,7 +580,7 @@ if __name__ == "__main__":
     for epoch in range(100_000):
         optimizer.zero_grad()
         out = model(data)
-        loss = torch.nn.functional.mse_loss(out, data.y)
+        loss = torch.nn.functional.mse_loss(out, data.y)  # type: ignore
         loss.backward()
         optimizer.step()
 

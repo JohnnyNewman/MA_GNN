@@ -360,7 +360,7 @@ def load_sim_data_euler(data_dir, file_name, node_type_ids, D=2):
                 flow.point_data["Velocity"][:, 0],
                 flow.point_data["Velocity"][:, 1],
                 flow.point_data["Pressure_Coefficient"],
-                # flow.point_data["Density"],
+                flow.point_data["Density"],
             )
         )
     ).T
@@ -376,9 +376,9 @@ def load_sim_data_euler(data_dir, file_name, node_type_ids, D=2):
 
     u_bc = torch.zeros((node_type_ids.shape[0], qois.shape[1]))
 
-    # INC_DENSITY_INIT= 998.2
+    INC_DENSITY_INIT = 998.2
 
-    # u_bc[:,4] = INC_DENSITY_INIT
+    u_bc[:, 4] = INC_DENSITY_INIT
 
     nodes_field = np.where(node_type_ids == 0)[0]
 
@@ -444,6 +444,74 @@ def find_containing_simplices(tris, x_samples, node_pts, node_lvls):
         simplex_node_ids.append(torch.tensor(tri.vertices, dtype=torch.long) + i_min)
 
     return simplex_indices, simplex_node_ids
+
+
+def get_data(
+    node_pts,
+    x_nodes,
+    u_nodes,
+    edges,
+    node_type_ids,
+    node_lvls,
+    cells,
+    tri_transforms,
+    x_data,
+    x_data_type,
+    # x_data_bc,
+    x_res,
+    x_res_type,
+    # x_res_bc,
+    u_data,
+    # u_bc,
+    u_x_data,
+    # u_x_bc,
+    u_xx_data,
+    # u_xx_bc,
+    x_data_simplex_indices,
+    x_data_simplex_node_ids,
+    # x_data_simplex_transforms,
+    x_res_simplex_indices,
+    x_res_simplex_node_ids,
+    # x_res_simplex_transforms,
+    # x_bc_simplex_indices,
+    # x_bc_simplex_node_ids,
+    x_out,
+    x_out_simplex_indices,
+    x_out_simplex_node_ids,
+):
+    # x_nodes == node_pts
+
+    data = Data(
+        # Graph
+        x=torch.tensor(x_nodes),
+        u_nodes=torch.tensor(u_nodes),
+        edge_index=torch.tensor(edges, dtype=torch.long).t().contiguous(),
+        # cells=None,
+        node_type_ids=torch.tensor(node_type_ids, dtype=torch.long),
+        node_lvls=torch.tensor(node_lvls, dtype=torch.long),
+        simplex_transforms=[
+            torch.tensor(tri_transform).to(device) for tri_transform in tri_transforms
+        ],
+        # Residuals
+        x_res=torch.tensor(x_res),
+        x_res_type=torch.tensor(x_res_type),
+        x_res_simplex_indices=torch.tensor(x_res_simplex_indices),
+        x_res_simplex_node_ids=x_res_simplex_node_ids,
+        # Data
+        x_data=torch.tensor(x_data),
+        x_data_type=torch.tensor(x_data_type),
+        u_data=torch.tensor(u_data),
+        # u_x_data=torch.tensor(u_x_data),
+        # u_xx_data=torch.tensor(u_xx_data),
+        x_data_simplex_indices=torch.tensor(x_data_simplex_indices),
+        x_data_simplex_node_ids=x_data_simplex_node_ids,
+        # Output
+        x_out=torch.tensor(x_out_validation),
+        x_out_simplex_indices=torch.tensor(x_out_simplex_indices),
+        x_out_simplex_node_ids=x_out_simplex_node_ids,
+    )
+
+    return data
 
 
 # def sample_points2(tris, node_pts, node_lvls, n_samples=10_000):

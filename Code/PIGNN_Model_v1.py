@@ -13,9 +13,9 @@ class PIGNN_Euler(MessagePassing):
         self,
         device,
         space_dim=2,
-        in_channels=4,
+        in_channels=5,
         latent_dim=32,
-        out_channels=4,
+        out_channels=5,
         num_type_embeddings=10,
         type_embedding_dim=8,
         num_lvls=8,
@@ -260,24 +260,128 @@ class PIGNN_Euler(MessagePassing):
         y = self.output_mlp(h)
         return y
 
-    def residuals(self, u, x):
+    def compute_residuals(self, data, h_nodes):
 
-        # u = self.forward(data)
+        n_samples = int(data.x_res.size(0) * 0.3)
+        rand_inds = torch.randperm(data.x_res.size(0))[:n_samples]
 
-        u_x = torch.autograd.grad(
-            u,
-            x,
-            grad_outputs=torch.ones_like(u),
-            create_graph=True,
-            retain_graph=True,
+        X = data.x_res[rand_inds]
+        X.requires_grad_()
+        h_res = self.interpolate_latents(
+            X,
+            h_nodes,
+            data.node_lvls,
+            data.x_res_simplex_indices[rand_inds],
+            data.simplex_transforms,
+            data.x_res_simplex_node_ids,
+        )
+        U = self.output(h_res)
+
+        # p = U[:, 0]
+        u = U[:, 1]
+        v = U[:, 2]
+        rho = U[:, 4]
+
+        # x = X[:, 0]
+        # y = X[:, 1]
+
+        out_p_X = torch.zeros_like(U)
+        out_p_X[:, 0] = 1
+        p_X = torch.autograd.grad(
+            U, X, grad_outputs=out_p_X, create_graph=True, retain_graph=True
         )[0]
-        # u_xx = torch.autograd.grad(u_x, data.x, grad_outputs=torch.ones_like(u_x), create_graph=True, retain_graph=True)[0]
-        # u_t = torch.autograd.grad(u, t, grad_outputs=torch.ones_like(u), create_graph=True, retain_graph=True)[0]
+        p_x = p_X[:, 0]  # type: ignore
+        p_y = p_X[:, 1]  # type: ignore
 
-        return
+        out_u_X = torch.zeros_like(U)
+        out_u_X[:, 1] = 1
+        u_X = torch.autograd.grad(
+            U, X, grad_outputs=out_u_X, create_graph=True, retain_graph=True
+        )[0]
+        u_x = u_X[:, 0]  # type: ignore
+        u_y = u_X[:, 1]  # type: ignore
 
-    def compute_loss(self, data):
+        out_v_X = torch.zeros_like(U)
+        out_v_X[:, 2] = 1
+        v_X = torch.autograd.grad(
+            U, X, grad_outputs=out_v_X, create_graph=True, retain_graph=True
+        )[0]
+        v_x = v_X[:, 0]  # type: ignore
+        v_y = v_X[:, 1]  # type: ignore
+
+        r1 = u_x + v_x  # u_x + v_y == 0
+        r2 = u * u_x + v * u_y - p_x / rho  # u*u_x + v*u_y == - p_x
+        r3 = u * v_x + v * v_y - p_y / rho  # u*v_x + v*v_y == - p_y
+
+        # r1 = u_X[:, 0] + v_X[:, 0]  # u_x + v_y == 0
+        # r2 = u * u_X[:, 0] + v * u_X[:, 1] - p_X[:, 0]  # u*u_x + v*u_y == - p_x
+        # r3 = u * v_X[:, 0] + v * v_X[:, 1] - p_X[:, 1]  # u*v_x + v*v_y == - p_y
+
+        # p_x = torch.autograd.grad(
+        #     p, x, grad_outputs=torch.ones_like(p), create_graph=True, retain_graph=True
+        # )
+        # p_y = torch.autograd.grad(
+        #     p, y, grad_outputs=torch.ones_like(p), create_graph=True, retain_graph=True
+        # )
+        # u_x = torch.autograd.grad(
+        #     u, x, grad_outputs=torch.ones_like(u), create_graph=True, retain_graph=True
+        # )
+        # u_y = torch.autograd.grad(
+        #     u, y, grad_outputs=torch.ones_like(u), create_graph=True, retain_graph=True
+        # )
+        # v_x = torch.autograd.grad(
+        #     v, x, grad_outputs=torch.ones_like(v), create_graph=True, retain_graph=True
+        # )
+        # v_y = torch.autograd.grad(
+        #     v, y, grad_outputs=torch.ones_like(v), create_graph=True, retain_graph=True
+        # )
+
+        # r1 = u_x + v_x  # u_x + v_y == 0
+        # r2 = u * u_x + v * u_y - p_x  # u*u_x + v*u_y == - p_x
+        # r3 = u * v_x + v * v_y - p_y  # u*v_x + v*v_y == - p_y
+
+        # out_vec_u_x = torch.zeros_like(u)
+        # out_vec_u_x[:, 1] = 1
+
+        # u_x = torch.autograd.grad(
+        #     u,
+        #     x,
+        #     grad_outputs=out_vec_u_x,
+        #     create_graph=True,
+        #     retain_graph=True,
+        # )[0]
+
+        # out_vec_v_x = torch.zeros_like(u)
+        # out_vec_v_x[:, 2] = 1
+
+        # v_x = torch.autograd.grad(
+        #     u,
+        #     x,
+        #     grad_outputs=out_vec_v_x,
+        #     create_graph=True,
+        #     retain_graph=True,
+        # )[0]
+
+        # out_vec = torch.zeros_like(u)
+        # out_vec[:, 0] = 1
+
+        # p_x = torch.autograd.grad(
+        #     u,
+        #     x,
+        #     grad_outputs=out_vec,
+        #     create_graph=True,
+        #     retain_graph=True,
+        # )[0]
+
+        # r1 = u_x[:,0] + v_x[:,1] # u_x + v_y == 0
+        # r2 = u[:,1]*u_x[:,0] + u[:,2]*u_x[:,1] + p_x[:,0]   # u*u_x + v*u_y == - p_x
+        # r3 = u[:,1]*v_x[:,0] + u[:,2]*v_x[:,1] + p_x[:,1]   # u*v_x + v*v_y == - p_y
+
+        return r1, r2, r3
+
+    def compute_loss(self, data, l_data=1, l_res=0.1):
         h_nodes = self.compute_graph_latents(data)
+
         h_data = self.interpolate_latents(
             data.x_data,
             h_nodes,
@@ -287,6 +391,33 @@ class PIGNN_Euler(MessagePassing):
             data.x_data_simplex_node_ids,
         )
         u_data_pred = self.output(h_data)
-        loss_data = F.mse_loss(u_data_pred, data.u_data)
+        # loss_data = F.mse_loss(u_data_pred, data.u_data)
 
-        return loss_data
+        u_mean = torch.mean(data.u_data, dim=0)
+        u_std = torch.std(data.u_data, dim=0)
+        u_std[4] = 1
+
+        u_data_pred_scaled = (u_data_pred - u_mean) / u_std
+        u_data_true_scaled = (data.u_data - u_mean) / u_std
+        loss_data = F.mse_loss(u_data_pred_scaled, u_data_true_scaled)
+
+        # x_res = data.x_res
+        # x_res.requires_grad_()
+        # h_res = self.interpolate_latents(
+        #     x_res,
+        #     h_nodes,
+        #     data.node_lvls,
+        #     data.x_res_simplex_indices,
+        #     data.simplex_transforms,
+        #     data.x_res_simplex_node_ids,
+        # )
+        # u_res_pred = self.output(h_res)
+        # r1, r2, r3 = self.compute_residuals(u_res_pred, x_res)
+        r1, r2, r3 = self.compute_residuals(data, h_nodes)
+
+        # loss_res = torch.norm(r1) + torch.norm(r2) + torch.norm(r3)
+        loss_res = torch.mean(r1**2 + r2**2 + r3**2)
+
+        loss_total = l_data * loss_data + l_res * loss_res
+
+        return loss_total, loss_data, loss_res
