@@ -490,7 +490,7 @@ def get_data(
         node_type_ids=torch.tensor(node_type_ids, dtype=torch.long),
         node_lvls=torch.tensor(node_lvls, dtype=torch.long),
         simplex_transforms=[
-            torch.tensor(tri_transform).to(device) for tri_transform in tri_transforms
+            torch.tensor(tri_transform) for tri_transform in tri_transforms
         ],
         # Residuals
         x_res=torch.tensor(x_res),
