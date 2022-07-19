@@ -13,7 +13,7 @@ print("Loading mesh")
 
 mesh, _ = load_mesh(data_dir, mesh_filename)
 
-n_vol_samples = 1 * len(mesh.points)
+n_vol_samples = int(0.3 * len(mesh.cells[0]))
 print(n_vol_samples)
 
 x_vol, _ = sample_points(mesh.cells[0].data, mesh.points, n_vol_samples, replace=False)
@@ -27,7 +27,7 @@ for su2_tag in np.unique(mesh.cell_data["su2:tag"][1]):
     cells = mesh.cells[1].data[mesh.cell_data["su2:tag"][1] == su2_tag]
     print(su2_tag, len(cells))
 
-    n_bc_samples = 2 * len(cells)
+    n_bc_samples = int(1.0 * len(cells))
     x_bc_i, i_bc_i = sample_points(cells, mesh.points, n_bc_samples, replace=False)
     x_bc.append(x_bc_i)
     i_bc.append(i_bc_i)
@@ -62,7 +62,7 @@ print("Creating graph")
     node_subsampling_prob,
     tris,
     cells,
-) = create_multilevel_graph(x0, node_type_ids, node_su2_tags, num_levels=8)
+) = create_multilevel_graph(x0, node_type_ids, node_su2_tags, num_levels=4)
 
 
 print("Loading simulation")
@@ -201,7 +201,9 @@ train_data = one_data.to(device)  # type: ignore
 
 print("Starting training")
 
-model = PIGNN_Euler(device=device, num_residual_latent_updates=12).to(device)
+model = PIGNN_Euler(device=device, num_residual_latent_updates=10, num_lvls=4).to(
+    device
+)
 
 # optimizer = torch.optim.Adam(model.parameters())
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-04, weight_decay=5e-4)
@@ -213,11 +215,11 @@ u_out_validation = qois_scaled[data_inds_validation].to(device)[:, :4]
 
 
 model.train()
-for epoch in range(100_000):
+for epoch in range(20_000):
     optimizer.zero_grad()
     # out = model(data)
     # loss = F.mse_loss(out, data.y)
-    loss, loss_data, loss_res = model.compute_loss(train_data, l_res=0.001)  # type: ignore
+    loss, loss_data, loss_res = model.compute_loss(train_data, l_res=1000)  # type: ignore
     loss.backward()
     optimizer.step()
 
@@ -236,7 +238,7 @@ for epoch in range(100_000):
             torch.std(loss_hist).cpu().numpy(),
             loss.detach().cpu().numpy(),
             loss_data.detach().cpu().numpy(),
-            loss_res.detach().cpu().numpy(),
+            1000 * loss_res.detach().cpu().numpy(),
             optimizer.param_groups[0]["lr"],
         )
         loss_hist = []

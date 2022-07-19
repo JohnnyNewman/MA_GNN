@@ -22,6 +22,8 @@ class PIGNN_Euler(MessagePassing):
         lvl_embedding_dim=4,
         delaunay_tris=None,
         num_residual_latent_updates=16,
+        num_nodes=None,
+        # node_embedding_dim=16,
     ):
         super().__init__(aggr="add", node_dim=0)  #  "Max" aggregation.
 
@@ -49,9 +51,9 @@ class PIGNN_Euler(MessagePassing):
 
         self.output_mlp = Seq(
             Linear(latent_dim * num_lvls, 40),
-            nn.Dropout(p=0.01),
-            Sigmoid(),
-            Linear(40, 40),
+            nn.Dropout(p=0.001),
+            # Sigmoid(),
+            # Linear(40, 40),
             Sigmoid(),
             Linear(40, 40),
             Sigmoid(),
@@ -63,6 +65,7 @@ class PIGNN_Euler(MessagePassing):
         # 0: farfield, 1: no slip boundary, 2: field, ...
         self.node_type_emb = nn.Embedding(num_type_embeddings, type_embedding_dim)
         self.node_lvl_emb = nn.Embedding(num_lvls, lvl_embedding_dim)
+        self.node_emb = nn.Embedding(num_nodes, latent_dim)
 
         self.delaunay_tris = delaunay_tris
 
@@ -145,7 +148,8 @@ class PIGNN_Euler(MessagePassing):
 
         # print("h1", h1)
 
-        u = self.output(h_out)
+        # u = self.output(h_out)
+        u = self.output(h_out, mean=data.qois_mean, std=data.qois_std)
 
         return u
 
@@ -178,14 +182,21 @@ class PIGNN_Euler(MessagePassing):
 
         return h0
 
+    def compute_initial_latents2(self, node_ids):
+        h0 = self.node_emb(node_ids)
+        return h0
+
     # def compute_graph_latents(self, edge_index, x, node_type_ids, node_lvls, u_bc):
     #     pass
 
     def compute_graph_latents(self, data):
-        h0 = self.compute_initial_latents(
+        h0_1 = self.compute_initial_latents(
             data.node_type_ids, data.node_lvls, data.u_nodes
         )  # .view(1, 7421, 16)
+        # h0_2 = self.compute_initial_latents2(data.node_new_ids)  # .view(1, 7421, 16)
         # h0 = self.compute_initial_latents(node_type_ids, node_lvls, u_bc, u_x_bc, u_xx_bc)
+        # h0 = h0_1 + h0_2
+        h0 = h0_1
 
         # print(h0.shape)
 
@@ -236,6 +247,9 @@ class PIGNN_Euler(MessagePassing):
                 * h_nodes[simplex_node_ids[lvl][simplex_indices[:, lvl]]]
             ).sum(dim=1)
 
+            inds = torch.where(simplex_indices[:, lvl] < 0)[0]
+            h_interp[inds, lvl, :] = 0
+
         h_interp = h_interp.reshape(-1, self.num_lvls * self.latent_dim)
 
         #     h_interp[:, lvl, :] = torch.sum(h_nodes[simplex_node_ids[lvl][simplex_indices]] * w, dim=-1)
@@ -255,14 +269,16 @@ class PIGNN_Euler(MessagePassing):
         #         (samples - tri.transform[s, 2])).sum(axis=2).T
         # coord = np.c_[b0, 1 - b0.sum(axis=1)]
 
-    def output(self, h):
+    def output(self, h, mean=0.0, std=1.0):
         # print(h)
         y = self.output_mlp(h)
-        return y
+        y_scaled = (y * std) + mean
+        # y_scaled = (y - mean) / std
+        return y_scaled
 
-    def compute_residuals(self, data, h_nodes):
+    def compute_residuals(self, data, h_nodes, sample_proportion=0.25):
 
-        n_samples = int(data.x_res.size(0) * 0.3)
+        n_samples = int(data.x_res.size(0) * sample_proportion)
         rand_inds = torch.randperm(data.x_res.size(0))[:n_samples]
 
         X = data.x_res[rand_inds]
@@ -275,7 +291,8 @@ class PIGNN_Euler(MessagePassing):
             data.simplex_transforms,
             data.x_res_simplex_node_ids,
         )
-        U = self.output(h_res)
+        U = self.output(h_res, mean=data.qois_mean, std=data.qois_std)
+        # U = self.output(h_res)
 
         # p = U[:, 0]
         u = U[:, 1]
@@ -308,6 +325,8 @@ class PIGNN_Euler(MessagePassing):
         )[0]
         v_x = v_X[:, 0]  # type: ignore
         v_y = v_X[:, 1]  # type: ignore
+
+        # u_x = u_x / data.qois_std[1]  ...
 
         r1 = u_x + v_x  # u_x + v_y == 0
         r2 = u * u_x + v * u_y - p_x / rho  # u*u_x + v*u_y == - p_x
@@ -377,9 +396,85 @@ class PIGNN_Euler(MessagePassing):
         # r2 = u[:,1]*u_x[:,0] + u[:,2]*u_x[:,1] + p_x[:,0]   # u*u_x + v*u_y == - p_x
         # r3 = u[:,1]*v_x[:,0] + u[:,2]*v_x[:,1] + p_x[:,1]   # u*v_x + v*v_y == - p_y
 
-        return r1, r2, r3
+        return r1, r2, r3, rand_inds
 
-    def compute_loss(self, data, l_data=1, l_res=0.1):
+    def compute_bc_loss_old(self, data, h_nodes):
+
+        # mask = data.x_res_type > 0
+        # x_res = data.x_res[mask]
+        # x_res_type = data.x_res_type[mask]
+        # x_res_simplex_indices = data.x_res_simplex_indices[mask]
+
+        # inds = torch.where()
+        h_res = self.interpolate_latents(
+            data.x_res_bc,
+            h_nodes,
+            data.node_lvls,
+            data.x_res_bc_simplex_indices,
+            data.simplex_transforms,
+            data.x_res_simplex_node_ids,
+        )
+        u_res_pred = self.output(h_res, mean=data.qois_mean, std=data.qois_std)
+
+        # SU2 tags
+        # airfoil
+        # m1 = data.x_res_type == 1
+        # u_target =
+
+        d = (u_res_pred - data.u_res_bc) * data.u_res_bc_mask
+        # d = d[data.u_res_bc_mask]
+        d2 = d[:, :4] / data.qois_std[:4]
+
+        d_p = d[:, 0]
+        d_vel = d[:, 1] + d[:, 2]
+
+        # loss = torch.sum(d2**2) / torch.sum(data.u_res_bc_mask)
+
+        N = torch.sum(data.u_res_bc_mask.abs() > 0)
+        loss = (d_p.pow(2).sum() + d_vel.pow(2).sum()) / N
+
+        return loss, d
+
+    def compute_bc_loss(self, data, h_nodes):
+
+        h_res = self.interpolate_latents(
+            data.x_res_bc,
+            h_nodes,
+            data.node_lvls,
+            data.x_res_bc_simplex_indices,
+            data.simplex_transforms,
+            data.x_res_simplex_node_ids,
+        )
+        u_res_pred = self.output(h_res, mean=data.qois_mean, std=data.qois_std)
+        d = torch.empty_like(data.u_res_bc[:, 0])
+
+        # SU2 tags
+        # airfoil / slip wall
+        m1 = data.x_res_bc_type == 1
+        d[m1] = torch.sum(u_res_pred[m1, 1:3] * data.u_res_bc_mask[m1, 1:3], dim=-1)
+
+        # lower_wall --> y-velocity == 0
+        m2 = data.x_res_bc_type == 2
+        d[m2] = u_res_pred[m2, 2] - data.u_res_bc[m2, 2]
+
+        # inlet --> x-velocity == 1.775, y-velocity == 0
+        m3 = data.x_res_bc_type == 3
+        d[m3] = torch.abs(u_res_pred[m3, 1:3] - data.u_res_bc[m3, 1:3]).sum()
+
+        # outlet --> pressure = 0
+        m4 = data.x_res_bc_type == 4
+        d[m4] = u_res_pred[m4, 0] - data.u_res_bc[m4, 0]
+
+        # upper_wall --> y-velocity == 0
+        m5 = data.x_res_bc_type == 5
+        d[m5] = u_res_pred[m5, 2] - data.u_res_bc[m5, 2]
+
+        # loss = d.pow(2).mean()
+        loss = d.pow(2).sum() / d.size(0)
+
+        return loss, d
+
+    def compute_loss(self, data, l_data=1, l_res=0.1, l_bc=0.1):
         h_nodes = self.compute_graph_latents(data)
 
         h_data = self.interpolate_latents(
@@ -390,16 +485,21 @@ class PIGNN_Euler(MessagePassing):
             data.simplex_transforms,
             data.x_data_simplex_node_ids,
         )
-        u_data_pred = self.output(h_data)
+        # u_data_pred = self.output(h_data)
         # loss_data = F.mse_loss(u_data_pred, data.u_data)
 
-        u_mean = torch.mean(data.u_data, dim=0)
-        u_std = torch.std(data.u_data, dim=0)
-        u_std[4] = 1
+        # u_mean = torch.mean(data.u_data, dim=0)
+        # u_std = torch.std(data.u_data, dim=0)
+        # u_std[4] = 1
 
-        u_data_pred_scaled = (u_data_pred - u_mean) / u_std
-        u_data_true_scaled = (data.u_data - u_mean) / u_std
-        loss_data = F.mse_loss(u_data_pred_scaled, u_data_true_scaled)
+        # u_data_pred_scaled = (u_data_pred - u_mean) / u_std
+        # u_data_true_scaled = (data.u_data - u_mean) / u_std
+        # loss_data = F.mse_loss(u_data_pred_scaled, u_data_true_scaled)
+
+        # u_data_pred = self.output(h_data, mean=data.qois_mean, std=data.qois_std)
+        u_data_pred_scaled = self.output(h_data)
+        u_data_true_scaled = (data.u_data - data.qois_mean) / data.qois_std
+        loss_data = F.mse_loss(u_data_pred_scaled[:, :4], u_data_true_scaled[:, :4])
 
         # x_res = data.x_res
         # x_res.requires_grad_()
@@ -413,11 +513,35 @@ class PIGNN_Euler(MessagePassing):
         # )
         # u_res_pred = self.output(h_res)
         # r1, r2, r3 = self.compute_residuals(u_res_pred, x_res)
-        r1, r2, r3 = self.compute_residuals(data, h_nodes)
+        r1, r2, r3, _ = self.compute_residuals(data, h_nodes)
+        # r1 = (r1 - r1.mean()) / r1.std()
+        # r2 = (r2 - r2.mean()) / r2.std()
+        # r3 = (r3 - r3.mean()) / r3.std()
+
+        self._r1_l1 = r1.abs().mean()
+        self._r2_l1 = r2.abs().mean()
+        self._r3_l1 = r3.abs().mean()
+        self._r1_l2 = r1.pow(2).mean().sqrt()
+        self._r2_l2 = r2.pow(2).mean().sqrt()
+        self._r3_l2 = r3.pow(2).mean().sqrt()
 
         # loss_res = torch.norm(r1) + torch.norm(r2) + torch.norm(r3)
-        loss_res = torch.mean(r1**2 + r2**2 + r3**2)
+        # loss_res = torch.mean(
+        #     torch.log10(r1**2 + 1)
+        #     + torch.log10(r2**2 + 1)
+        #     + torch.log10(r3**2 + 1)
+        # )
+        # loss_res = torch.mean(
+        #     (r1**2 / self._r1_l1) + (r2**2 / self._r2_l1) + (r3**2 / self._r3_l1)
+        # )
+        # loss_res = self._r1_l1 + self._r2_l1 + self._r3_l1
+        loss_res = self._r1_l2 + self._r2_l2 + self._r3_l2
 
-        loss_total = l_data * loss_data + l_res * loss_res
+        loss_bc, _ = self.compute_bc_loss(data, h_nodes)
 
-        return loss_total, loss_data, loss_res
+        loss_total = (l_data * loss_data) + (l_res * loss_res) + (l_bc * loss_bc)
+
+        # loss_total = (1 * loss_data) + (0 * loss_res) + (0 * loss_bc)   # GNN
+        # loss_total = (0 * loss_data) + (1 * loss_res) + (1 * loss_bc)   # PINN
+
+        return loss_total, loss_data, loss_res, loss_bc
