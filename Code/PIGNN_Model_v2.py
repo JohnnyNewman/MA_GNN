@@ -25,33 +25,37 @@ class PIGNN_RANS(MessagePassing):
         num_nodes=None,
         # node_embedding_dim=16,
     ):
-        super().__init__(aggr="add", node_dim=0)  #  "Max" aggregation.
+        super().__init__(aggr="mean", node_dim=0)  #  "Max" aggregation.
 
         self.latent_dim = latent_dim
         self.num_lvls = num_lvls
         self.device = device
 
-        c1 = 20
+        c1 = 64
         self.initial_latent_mlp = Seq(
             Linear(in_channels + type_embedding_dim + lvl_embedding_dim + 3, c1),
             nn.Dropout(p=0.001),
             ReLU(),
             Linear(c1, c1),
             ReLU(),
+            # Linear(c1, c1),
+            # ReLU(),
             Linear(c1, latent_dim),
         )
 
-        c2 = 20
+        c2 = 64 # 32
         self.message_mlp = Seq(
             Linear(2 * latent_dim + 1 + space_dim, c2),
             nn.Dropout(p=0.001),
             ReLU(),
             Linear(c2, c2),
             ReLU(),
+            # Linear(c2, c2),
+            # ReLU(),
             Linear(c2, latent_dim),
         )
 
-        c3 = 20
+        c3 = 32 #64
         self.output_mlp = Seq(
             Linear(latent_dim * num_lvls, c3),
             nn.Dropout(p=0.001),
@@ -336,16 +340,16 @@ class PIGNN_RANS(MessagePassing):
         v = rhoV / rho
 
         u_X = torch.autograd.grad(
-            u, X, create_graph=True, retain_graph=True
+            u, X, grad_outputs=torch.ones_like(u), create_graph=True, retain_graph=True
         )[0]
-        u_x = u_X[:,0]
-        u_y = u_X[:,0]
+        u_x = u_X[:, 0]
+        u_y = u_X[:, 1]
 
         v_X = torch.autograd.grad(
-            v, X, create_graph=True, retain_graph=True
+            v, X, grad_outputs=torch.ones_like(v), create_graph=True, retain_graph=True
         )[0]
-        v_x = v_X[:,0]
-        v_y = v_X[:,0]
+        v_x = v_X[:, 0]
+        v_y = v_X[:, 1]
 
         out_rhoU_X = torch.zeros_like(U)
         out_rhoU_X[:, 3] = 1
@@ -366,163 +370,51 @@ class PIGNN_RANS(MessagePassing):
         uu = u * u
         uv = u * v
         vv = v * v
-        rhouu = rho * uu
-        rhouv = rho * uv
-        rhovv = rho * vv
+        # rhouu = rho * uu
+        # rhouv = rho * uv
+        # rhovv = rho * vv
+        rhouu = rhoU * u
+        rhouv = 0.5 * (rhoU * v + rhoV * u)
+        rhovv = rhoV * v
 
         rhouu_X = torch.autograd.grad(
-            rhouu, X, create_graph=True, retain_graph=True
+            rhouu,
+            X,
+            grad_outputs=torch.ones_like(rhouu),
+            create_graph=True,
+            retain_graph=True,
         )[0]
         rhouu_x = rhouu_X[:, 0]
         rhouu_y = rhouu_X[:, 1]
 
         rhouv_X = torch.autograd.grad(
-            rhouv, X, create_graph=True, retain_graph=True
+            rhouv,
+            X,
+            grad_outputs=torch.ones_like(rhouv),
+            create_graph=True,
+            retain_graph=True,
         )[0]
         rhouv_x = rhouv_X[:, 0]
         rhouv_y = rhouv_X[:, 1]
 
         rhovv_X = torch.autograd.grad(
-            rhovv, X, create_graph=True, retain_graph=True
+            rhovv,
+            X,
+            grad_outputs=torch.ones_like(rhovv),
+            create_graph=True,
+            retain_graph=True,
         )[0]
         rhovv_x = rhovv_X[:, 0]
         rhovv_y = rhovv_X[:, 1]
 
-
         r1 = rhoU_x + rhoV_y
 
-        r21 = (rhouu_x + p_x - tau11_x) + (rhouv_y - tau21_y)
-        r22 = (rhouv_x - tau12_x) + (rhovv_y + p_y - tau22_y)
+        # r21 = (rhouu_x + p_x - tau11_x) + (rhouv_y - tau21_y)
+        # r22 = (rhouv_x - tau12_x) + (rhovv_y + p_y - tau22_y)
 
-        r3 = 
+        # r3 = ...
 
-
-
-
-
-
-        ############
-        ############
-
-        out_u_X = torch.zeros_like(U)
-        out_u_X[:, 1] = 1
-        u_X = torch.autograd.grad(
-            U, X, grad_outputs=out_u_X, create_graph=True, retain_graph=True
-        )[0]
-        u_x = u_X[:, 0]  # type: ignore
-        u_y = u_X[:, 1]  # type: ignore
-
-        out_v_X = torch.zeros_like(U)
-        out_v_X[:, 2] = 1
-        v_X = torch.autograd.grad(
-            U, X, grad_outputs=out_v_X, create_graph=True, retain_graph=True
-        )[0]
-        v_x = v_X[:, 0]  # type: ignore
-        v_y = v_X[:, 1]  # type: ignore
-
-        # p = U[:, 0]
-        u = U[:, 1]
-        v = U[:, 2]
-        rho = U[:, 4]
-
-        # x = X[:, 0]
-        # y = X[:, 1]
-
-        out_p_X = torch.zeros_like(U)
-        out_p_X[:, 0] = 1
-        p_X = torch.autograd.grad(
-            U, X, grad_outputs=out_p_X, create_graph=True, retain_graph=True
-        )[0]
-        p_x = p_X[:, 0]  # type: ignore
-        p_y = p_X[:, 1]  # type: ignore
-
-        out_u_X = torch.zeros_like(U)
-        out_u_X[:, 1] = 1
-        u_X = torch.autograd.grad(
-            U, X, grad_outputs=out_u_X, create_graph=True, retain_graph=True
-        )[0]
-        u_x = u_X[:, 0]  # type: ignore
-        u_y = u_X[:, 1]  # type: ignore
-
-        out_v_X = torch.zeros_like(U)
-        out_v_X[:, 2] = 1
-        v_X = torch.autograd.grad(
-            U, X, grad_outputs=out_v_X, create_graph=True, retain_graph=True
-        )[0]
-        v_x = v_X[:, 0]  # type: ignore
-        v_y = v_X[:, 1]  # type: ignore
-
-        # u_x = u_x / data.qois_std[1]  ...
-
-        r1 = u_x + v_x  # u_x + v_y == 0
-        r2 = u * u_x + v * u_y - p_x / rho  # u*u_x + v*u_y == - p_x
-        r3 = u * v_x + v * v_y - p_y / rho  # u*v_x + v*v_y == - p_y
-
-        # r1 = u_X[:, 0] + v_X[:, 0]  # u_x + v_y == 0
-        # r2 = u * u_X[:, 0] + v * u_X[:, 1] - p_X[:, 0]  # u*u_x + v*u_y == - p_x
-        # r3 = u * v_X[:, 0] + v * v_X[:, 1] - p_X[:, 1]  # u*v_x + v*v_y == - p_y
-
-        # p_x = torch.autograd.grad(
-        #     p, x, grad_outputs=torch.ones_like(p), create_graph=True, retain_graph=True
-        # )
-        # p_y = torch.autograd.grad(
-        #     p, y, grad_outputs=torch.ones_like(p), create_graph=True, retain_graph=True
-        # )
-        # u_x = torch.autograd.grad(
-        #     u, x, grad_outputs=torch.ones_like(u), create_graph=True, retain_graph=True
-        # )
-        # u_y = torch.autograd.grad(
-        #     u, y, grad_outputs=torch.ones_like(u), create_graph=True, retain_graph=True
-        # )
-        # v_x = torch.autograd.grad(
-        #     v, x, grad_outputs=torch.ones_like(v), create_graph=True, retain_graph=True
-        # )
-        # v_y = torch.autograd.grad(
-        #     v, y, grad_outputs=torch.ones_like(v), create_graph=True, retain_graph=True
-        # )
-
-        # r1 = u_x + v_x  # u_x + v_y == 0
-        # r2 = u * u_x + v * u_y - p_x  # u*u_x + v*u_y == - p_x
-        # r3 = u * v_x + v * v_y - p_y  # u*v_x + v*v_y == - p_y
-
-        # out_vec_u_x = torch.zeros_like(u)
-        # out_vec_u_x[:, 1] = 1
-
-        # u_x = torch.autograd.grad(
-        #     u,
-        #     x,
-        #     grad_outputs=out_vec_u_x,
-        #     create_graph=True,
-        #     retain_graph=True,
-        # )[0]
-
-        # out_vec_v_x = torch.zeros_like(u)
-        # out_vec_v_x[:, 2] = 1
-
-        # v_x = torch.autograd.grad(
-        #     u,
-        #     x,
-        #     grad_outputs=out_vec_v_x,
-        #     create_graph=True,
-        #     retain_graph=True,
-        # )[0]
-
-        # out_vec = torch.zeros_like(u)
-        # out_vec[:, 0] = 1
-
-        # p_x = torch.autograd.grad(
-        #     u,
-        #     x,
-        #     grad_outputs=out_vec,
-        #     create_graph=True,
-        #     retain_graph=True,
-        # )[0]
-
-        # r1 = u_x[:,0] + v_x[:,1] # u_x + v_y == 0
-        # r2 = u[:,1]*u_x[:,0] + u[:,2]*u_x[:,1] + p_x[:,0]   # u*u_x + v*u_y == - p_x
-        # r3 = u[:,1]*v_x[:,0] + u[:,2]*v_x[:,1] + p_x[:,1]   # u*v_x + v*v_y == - p_y
-
-        return r1, r2, r3, rand_inds
+        return r1, r1, r1, rand_inds
 
     def compute_bc_loss_old(self, data, h_nodes):
 
