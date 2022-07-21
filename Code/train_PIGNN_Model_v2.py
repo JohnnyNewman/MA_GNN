@@ -33,9 +33,9 @@ def get_dataset(
     print("qois_mean:", qois_mean)
     print("qois_std:", qois_std)
 
-    for i in range(len(dataset)):
-        dataset[i].qois_mean = qois_mean
-        dataset[i].qois_std = qois_std
+    # for i in range(len(dataset)):
+    #     dataset[i].qois_mean = qois_mean.clone()
+    #     dataset[i].qois_std = qois_std.clone()
 
     return dataset
 
@@ -63,13 +63,17 @@ def train_model(
     no_updates=12,
     max_epoch=10_001,
     start_epoch=0,
+    l_res=0.00,
+    l_bc=0.1,
+    l_data=1.0,
+    h_noise=0.001,
 ):
 
     loader = DataLoader(dataset, batch_size=1, shuffle=True, pin_memory=False)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-04)
     scheduler = CosineAnnealingLR(
-        optimizer, T_max=200, eta_min=1e-04, last_epoch=start_epoch - 1, verbose=False
+        optimizer, T_max=200, eta_min=1e-04, last_epoch=-1, verbose=False  # type: ignore
     )
 
     columns = [
@@ -83,6 +87,12 @@ def train_model(
         "l_bc",
         "loss_bc",
         "val_loss",
+        # "r1_l1",
+        # "r2_l1",
+        # "r3_l1",
+        # "r1_l2",
+        # "r2_l2",
+        # "r3_l2",
     ]
     results_df = pd.DataFrame(columns=columns)
 
@@ -98,10 +108,10 @@ def train_model(
             model.train()
             # out = model(data)
             # loss = F.mse_loss(out, data.y)
-            l_res = 0.00
-            l_bc = 0.1
-            l_data = 1
-            loss, loss_data, loss_res, loss_bc = model.compute_loss(train_data, l_data, l_res=l_res, l_bc=l_bc, h_noise=0.1)  # type: ignore
+            # l_res = 0.00
+            # l_bc = 0.1
+            # l_data = 1
+            loss, loss_data, loss_res, loss_bc = model.compute_loss(train_data, l_data, l_res=l_res, l_bc=l_bc, h_noise=h_noise)  # type: ignore
             loss.backward()
             optimizer.step()
 
@@ -138,6 +148,12 @@ def train_model(
                         float(
                             val_loss.cpu().numpy(),
                         ),
+                        # float(model._r1_l1.detach().cpu().numpy()),
+                        # float(model._r2_l1.detach().cpu().numpy()),
+                        # float(model._r3_l1.detach().cpu().numpy()),
+                        # float(model._r1_l2.detach().cpu().numpy()),
+                        # float(model._r2_l2.detach().cpu().numpy()),
+                        # float(model._r3_l2.detach().cpu().numpy()),
                     ]
                 ],
             )
@@ -190,7 +206,9 @@ def train_model(
         )
         scheduler.step()
         if epoch % 10 == 0:
-            torch.save(model.state_dict(), f"model_checkpoint_{epoch}.pt")
+            torch.save(
+                model.state_dict(), f"model_checkpoints/model_checkpoint_{epoch}.pt"
+            )
 
 
 if __name__ == "__main__":
@@ -208,7 +226,7 @@ if __name__ == "__main__":
         device=device,
         num_residual_latent_updates=NO_UPDATES,
         num_lvls=NO_LEVELS,
-        num_nodes=0,
+        # num_nodes=0,
     ).to(device)
 
     train_model(model, dataset, device, NO_LEVELS, NO_UPDATES, 10_001)

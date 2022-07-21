@@ -1057,11 +1057,11 @@ def get_data_from_simulation(
         x_res_bc_simplex_indices=torch.tensor(x_res_bc_simplex_indices),
         x_res_bc_simplex_node_ids=x_res_bc_simplex_node_ids,
         data_dir=data_dir,
-        # Ma=torch.tensor([Ma]),
-        # Re=torch.tensor([Re]),
-        # AOA=torch.tensor([AOA]),
+        # Ma_ref=torch.tensor([Ma]),
+        # Re_ref=torch.tensor([Re]),
+        # AOA_ref=torch.tensor([AOA]),
         Ma_ref=torch.ones_like(u_nodes[:, :1]) * Ma,
-        Re_ref=torch.ones_like(u_nodes[:, :1]) * Re,
+        Re_ref=torch.ones_like(u_nodes[:, :1]) * np.log10(Re),
         AOA_ref=torch.ones_like(u_nodes[:, :1]) * AOA,
     )
 

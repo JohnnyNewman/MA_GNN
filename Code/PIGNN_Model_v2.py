@@ -22,7 +22,7 @@ class PIGNN_RANS(MessagePassing):
         lvl_embedding_dim=4,
         delaunay_tris=None,
         num_residual_latent_updates=16,
-        num_nodes=None,
+        # num_nodes=None,
         # node_embedding_dim=16,
     ):
         super().__init__(aggr="mean", node_dim=0)  #  "Max" aggregation.
@@ -58,7 +58,7 @@ class PIGNN_RANS(MessagePassing):
         c3 = 64
         self.output_mlp = Seq(
             Linear(latent_dim * num_lvls, c3),
-            nn.Dropout(p=0.001),
+            # nn.Dropout(p=0.001),
             # Sigmoid(),
             # Linear(c3, c3),
             Sigmoid(),
@@ -72,7 +72,7 @@ class PIGNN_RANS(MessagePassing):
         # 0: farfield, 1: no slip boundary, 2: field, ...
         self.node_type_emb = nn.Embedding(num_type_embeddings, type_embedding_dim)
         self.node_lvl_emb = nn.Embedding(num_lvls, lvl_embedding_dim)
-        self.node_emb = nn.Embedding(num_nodes, latent_dim)
+        # self.node_emb = nn.Embedding(num_nodes, latent_dim)
 
         self.delaunay_tris = delaunay_tris
 
@@ -210,9 +210,9 @@ class PIGNN_RANS(MessagePassing):
 
         return h0
 
-    def compute_initial_latents2(self, node_ids):
-        h0 = self.node_emb(node_ids)
-        return h0
+    # def compute_initial_latents2(self, node_ids):
+    #     h0 = self.node_emb(node_ids)
+    #     return h0
 
     # def compute_graph_latents(self, edge_index, x, node_type_ids, node_lvls, u_bc):
     #     pass
@@ -339,20 +339,20 @@ class PIGNN_RANS(MessagePassing):
         nu_tilde = U[:, 9]
         Y_Plus = U[:, 10]
 
-        u = rhoU / rho
-        v = rhoV / rho
+        # u = rhoU / rho
+        # v = rhoV / rho
 
-        u_X = torch.autograd.grad(
-            u, X, grad_outputs=torch.ones_like(u), create_graph=True, retain_graph=True
-        )[0]
-        u_x = u_X[:, 0]
-        u_y = u_X[:, 1]
+        # u_X = torch.autograd.grad(
+        #     u, X, grad_outputs=torch.ones_like(u), create_graph=True, retain_graph=True
+        # )[0]
+        # u_x = u_X[:, 0]
+        # u_y = u_X[:, 1]
 
-        v_X = torch.autograd.grad(
-            v, X, grad_outputs=torch.ones_like(v), create_graph=True, retain_graph=True
-        )[0]
-        v_x = v_X[:, 0]
-        v_y = v_X[:, 1]
+        # v_X = torch.autograd.grad(
+        #     v, X, grad_outputs=torch.ones_like(v), create_graph=True, retain_graph=True
+        # )[0]
+        # v_x = v_X[:, 0]
+        # v_y = v_X[:, 1]
 
         out_rhoU_X = torch.zeros_like(U)
         out_rhoU_X[:, 3] = 1
@@ -370,45 +370,45 @@ class PIGNN_RANS(MessagePassing):
         rhoV_x = rhoV_X[:, 0]
         rhoV_y = rhoV_X[:, 1]
 
-        uu = u * u
-        uv = u * v
-        vv = v * v
-        # rhouu = rho * uu
-        # rhouv = rho * uv
-        # rhovv = rho * vv
-        rhouu = rhoU * u
-        rhouv = 0.5 * (rhoU * v + rhoV * u)
-        rhovv = rhoV * v
+        # uu = u * u
+        # uv = u * v
+        # vv = v * v
+        # # rhouu = rho * uu
+        # # rhouv = rho * uv
+        # # rhovv = rho * vv
+        # rhouu = rhoU * u
+        # rhouv = 0.5 * (rhoU * v + rhoV * u)
+        # rhovv = rhoV * v
 
-        rhouu_X = torch.autograd.grad(
-            rhouu,
-            X,
-            grad_outputs=torch.ones_like(rhouu),
-            create_graph=True,
-            retain_graph=True,
-        )[0]
-        rhouu_x = rhouu_X[:, 0]
-        rhouu_y = rhouu_X[:, 1]
+        # rhouu_X = torch.autograd.grad(
+        #     rhouu,
+        #     X,
+        #     grad_outputs=torch.ones_like(rhouu),
+        #     create_graph=True,
+        #     retain_graph=True,
+        # )[0]
+        # rhouu_x = rhouu_X[:, 0]
+        # rhouu_y = rhouu_X[:, 1]
 
-        rhouv_X = torch.autograd.grad(
-            rhouv,
-            X,
-            grad_outputs=torch.ones_like(rhouv),
-            create_graph=True,
-            retain_graph=True,
-        )[0]
-        rhouv_x = rhouv_X[:, 0]
-        rhouv_y = rhouv_X[:, 1]
+        # rhouv_X = torch.autograd.grad(
+        #     rhouv,
+        #     X,
+        #     grad_outputs=torch.ones_like(rhouv),
+        #     create_graph=True,
+        #     retain_graph=True,
+        # )[0]
+        # rhouv_x = rhouv_X[:, 0]
+        # rhouv_y = rhouv_X[:, 1]
 
-        rhovv_X = torch.autograd.grad(
-            rhovv,
-            X,
-            grad_outputs=torch.ones_like(rhovv),
-            create_graph=True,
-            retain_graph=True,
-        )[0]
-        rhovv_x = rhovv_X[:, 0]
-        rhovv_y = rhovv_X[:, 1]
+        # rhovv_X = torch.autograd.grad(
+        #     rhovv,
+        #     X,
+        #     grad_outputs=torch.ones_like(rhovv),
+        #     create_graph=True,
+        #     retain_graph=True,
+        # )[0]
+        # rhovv_x = rhovv_X[:, 0]
+        # rhovv_y = rhovv_X[:, 1]
 
         r1 = rhoU_x + rhoV_y
 
@@ -567,6 +567,7 @@ class PIGNN_RANS(MessagePassing):
         loss_bc, _ = self.compute_bc_loss(data, h_nodes)
 
         loss_total = (l_data * loss_data) + (l_res * loss_res) + (l_bc * loss_bc)
+        # loss_total = (l_data * loss_data) + (l_bc * loss_bc)
 
         # loss_total = (1 * loss_data) + (0 * loss_res) + (0 * loss_bc)   # GNN
         # loss_total = (0 * loss_data) + (1 * loss_res) + (1 * loss_bc)   # PINN
