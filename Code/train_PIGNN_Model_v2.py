@@ -219,8 +219,9 @@ if __name__ == "__main__":
     # device = torch.device('cpu')
     print("Device:", device)
 
-    dsn_ids = [(i + 12) for i in range(4)]
-    dataset = get_dataset(dsn_ids, NO_LEVELS, device, 0.05, 2)
+    # dsn_ids = [(i + 12) for i in range(4)]
+    # dataset = get_dataset(dsn_ids, NO_LEVELS, device, 0.05, 2)
+    dataset = torch.load("dataset_chk.pt")
 
     model = PIGNN_RANS(
         device=device,
@@ -229,4 +230,6 @@ if __name__ == "__main__":
         # num_nodes=0,
     ).to(device)
 
-    train_model(model, dataset, device, NO_LEVELS, NO_UPDATES, 10_001)
+    train_model(
+        model, dataset, device, NO_LEVELS, NO_UPDATES, 10_001, l_res=1e-5, h_noise=0.001
+    )
