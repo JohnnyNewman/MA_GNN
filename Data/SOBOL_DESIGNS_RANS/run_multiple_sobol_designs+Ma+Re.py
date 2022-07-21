@@ -190,7 +190,7 @@ def run(options):
 
     soboleng = SobolEngine(n_dv + 3, True)
 
-    n_samples = 256
+    n_samples = 1024
 
     X_draw = soboleng.draw(n_samples).numpy()
 
@@ -240,7 +240,7 @@ def run(options):
         dsn = SU2.eval.design.Design(config, folder="DESIGNS/DSN_{:04d}".format(i))
         inputs.append({"design": dsn, "dvs": dvs})
 
-    with Pool(processes=7) as pool:
+    with Pool(processes=16) as pool:
         outputs = pool.map(run_one_design, inputs)
 
     print(outputs)
