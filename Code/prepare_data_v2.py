@@ -1060,9 +1060,9 @@ def get_data_from_simulation(
         # Ma=torch.tensor([Ma]),
         # Re=torch.tensor([Re]),
         # AOA=torch.tensor([AOA]),
-        Ma_ref=torch.ones_like(u_nodes[:,:1]) * Ma,
-        Re_ref=torch.ones_like(u_nodes[:,:1]) * Ma,
-        AOA_ref=torch.ones_like(u_nodes[:,:1]) * Ma,
+        Ma_ref=torch.ones_like(u_nodes[:, :1]) * Ma,
+        Re_ref=torch.ones_like(u_nodes[:, :1]) * Re,
+        AOA_ref=torch.ones_like(u_nodes[:, :1]) * AOA,
     )
 
     return data
