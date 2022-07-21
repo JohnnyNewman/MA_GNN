@@ -43,7 +43,7 @@ class PIGNN_RANS(MessagePassing):
             Linear(c1, latent_dim),
         )
 
-        c2 = 64 # 32
+        c2 = 64  # 32
         self.message_mlp = Seq(
             Linear(2 * latent_dim + 1 + space_dim, c2),
             nn.Dropout(p=0.001),
@@ -55,7 +55,7 @@ class PIGNN_RANS(MessagePassing):
             Linear(c2, latent_dim),
         )
 
-        c3 = 32 #64
+        c3 = 64
         self.output_mlp = Seq(
             Linear(latent_dim * num_lvls, c3),
             nn.Dropout(p=0.001),
@@ -129,9 +129,9 @@ class PIGNN_RANS(MessagePassing):
 
     #     return out
 
-    def forward(self, data):
+    def forward(self, data, normalized=False, h_noise=1e-03):
 
-        h_nodes = self.compute_graph_latents(data)
+        h_nodes = self.compute_graph_latents(data, h_noise)
 
         # x_out=x_samples,
         # simplex_indices=simplex_indices,
@@ -156,7 +156,10 @@ class PIGNN_RANS(MessagePassing):
         # print("h1", h1)
 
         # u = self.output(h_out)
-        u = self.output(h_out, mean=data.qois_mean, std=data.qois_std)
+        if normalized:
+            u = self.output(h_out)
+        else:
+            u = self.output(h_out, mean=data.qois_mean, std=data.qois_std)
 
         return u
 
@@ -214,7 +217,7 @@ class PIGNN_RANS(MessagePassing):
     # def compute_graph_latents(self, edge_index, x, node_type_ids, node_lvls, u_bc):
     #     pass
 
-    def compute_graph_latents(self, data):
+    def compute_graph_latents(self, data, h_noise=1e-03):
         h0_1 = self.compute_initial_latents(
             data.node_type_ids,
             data.node_lvls,
@@ -226,7 +229,7 @@ class PIGNN_RANS(MessagePassing):
         # h0_2 = self.compute_initial_latents2(data.node_new_ids)  # .view(1, 7421, 16)
         # h0 = self.compute_initial_latents(node_type_ids, node_lvls, u_bc, u_x_bc, u_xx_bc)
         # h0 = h0_1 + h0_2
-        h0 = h0_1
+        h0 = h0_1 + (h_noise * torch.randn_like(h0_1))
 
         # print(h0.shape)
 
@@ -498,8 +501,8 @@ class PIGNN_RANS(MessagePassing):
 
         return loss, d
 
-    def compute_loss(self, data, l_data=1, l_res=0.1, l_bc=0.1):
-        h_nodes = self.compute_graph_latents(data)
+    def compute_loss(self, data, l_data=1, l_res=0.1, l_bc=0.1, h_noise=1e-03):
+        h_nodes = self.compute_graph_latents(data, h_noise)
 
         h_data = self.interpolate_latents(
             data.x_data,
@@ -523,7 +526,7 @@ class PIGNN_RANS(MessagePassing):
         # u_data_pred = self.output(h_data, mean=data.qois_mean, std=data.qois_std)
         u_data_pred_scaled = self.output(h_data)
         u_data_true_scaled = (data.u_data - data.qois_mean) / data.qois_std
-        loss_data = F.mse_loss(u_data_pred_scaled[:, :4], u_data_true_scaled[:, :4])
+        loss_data = F.mse_loss(u_data_pred_scaled[:, :], u_data_true_scaled[:, :])
 
         # x_res = data.x_res
         # x_res.requires_grad_()
@@ -569,6 +572,16 @@ class PIGNN_RANS(MessagePassing):
         # loss_total = (0 * loss_data) + (1 * loss_res) + (1 * loss_bc)   # PINN
 
         return loss_total, loss_data, loss_res, loss_bc
+
+    def compute_validation_loss(self, data, h_noise=0):
+
+        u_pred_scaled = self.forward(data, normalized=True, h_noise=h_noise)
+        u_out_validation_scaled = (
+            data.u_out_validation - data.qois_mean
+        ) / data.qois_std
+        val_loss = F.mse_loss(u_pred_scaled.detach(), u_out_validation_scaled).detach()
+
+        return val_loss
 
 
 class PIGNN_Euler(MessagePassing):
@@ -685,7 +698,7 @@ class PIGNN_Euler(MessagePassing):
 
     #     return out
 
-    def forward(self, data):
+    def forward(self, data, normalized=False):
 
         h_nodes = self.compute_graph_latents(data)
 
@@ -712,7 +725,10 @@ class PIGNN_Euler(MessagePassing):
         # print("h1", h1)
 
         # u = self.output(h_out)
-        u = self.output(h_out, mean=data.qois_mean, std=data.qois_std)
+        if normalized:
+            u = self.output(h_out, mean=0, std=1)
+        else:
+            u = self.output(h_out, mean=data.qois_mean, std=data.qois_std)
 
         return u
 
@@ -1062,7 +1078,7 @@ class PIGNN_Euler(MessagePassing):
         # u_data_pred = self.output(h_data, mean=data.qois_mean, std=data.qois_std)
         u_data_pred_scaled = self.output(h_data)
         u_data_true_scaled = (data.u_data - data.qois_mean) / data.qois_std
-        loss_data = F.mse_loss(u_data_pred_scaled[:, :4], u_data_true_scaled[:, :4])
+        loss_data = F.mse_loss(u_data_pred_scaled[:, :], u_data_true_scaled[:, :])
 
         # x_res = data.x_res
         # x_res.requires_grad_()
