@@ -168,7 +168,7 @@ def train_model(
             #     #         # "r3_l2: {:.4f}".format(model._r3_l2.detach().cpu().numpy()),
             #     # )
             #     loss_hist = []
-        if epoch % 10 == 0:
+        if epoch % 1 == 0:
             # print(epoch, " ".join([f"{k}: {v.values[0]:.6f}" for k,v in results_df.groupby("epoch").mean().tail(1).items()]))
             print(
                 epoch,
