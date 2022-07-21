@@ -27,6 +27,16 @@ def get_dataset(
         ).to(device)
         for i in dsn_ids
     ]
+
+    qois_mean = torch.stack([d.qois_mean for d in dataset]).mean(dim=0)
+    qois_std = torch.stack([d.qois_std for d in dataset]).mean(dim=0)
+    print("qois_mean:", qois_mean)
+    print("qois_std:", qois_std)
+
+    for i in range(len(dataset)):
+        dataset[i].qois_mean = qois_mean
+        dataset[i].qois_std = qois_std
+
     return dataset
 
 
